@@ -8,7 +8,7 @@
 int main() {
 
   Fumbo::Engine::Instance().Init(1280, 720, "Magfy", 60);
-  ToggleBorderlessWindowed();
+  SetConfigFlags(FLAG_WINDOW_UNDECORATED);
   auto appCore = std::make_shared<AppCore>();
   LoadGlobalAssets();
   Fumbo::Engine::Instance().SharedState(appCore);

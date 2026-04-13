@@ -27,4 +27,8 @@ private:
   Fumbo::UI::Button exitBtn;
   Fumbo::UI::Button maximizeBtn;
   Fumbo::UI::Button minimizeBtn;
+  Fumbo::UI::Button titleBar;
+  bool m_isDragging = false;
+  Vector2 m_dragOffset = {0, 0};
+  Vector2 m_windowPosCache = {0, 0};
 };

@@ -11,6 +11,7 @@ typedef struct colortheme {
   Color prim2{};
   Color second1{};
   Color second2{};
+  Color titlebar{};
 } ColorTheme;
 
 extern Fumbo::UI::ButtonStyle btnstyle;
