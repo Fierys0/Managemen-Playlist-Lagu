@@ -1,7 +1,7 @@
 #pragma once
 #include "fumbo.hpp"
 
-class MainMenu : public IGameState {
+class Settings : public IGameState {
 public:
   void Init() override;
   void Cleanup() override;
@@ -10,6 +10,6 @@ public:
   void DrawDirty() override;
 
 private:
-  Fumbo::UI::Button settingBtn;
-  Texture2D settingTex;
+  Fumbo::UI::Button toggleTheme;
+  Fumbo::UI::Button backBtn;
 };

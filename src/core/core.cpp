@@ -1,4 +1,5 @@
 #include "core.hpp"
+#include "core/globals.hpp"
 #include "fumbo.hpp"
 #include "raylib.h"
 #include <cmath>
@@ -11,15 +12,12 @@ void AppCore::Init() {
   exitBtn = Fumbo::UI::Button({1210, 20, 50, 50});
   minimizeBtn = Fumbo::UI::Button({1090, 20, 50, 50});
   maximizeBtn = Fumbo::UI::Button({1150, 20, 50, 50});
-  exitBtn.Roundness(1);
-  minimizeBtn.Roundness(1);
-  maximizeBtn.Roundness(1);
-  exitBtn.Segments(8);
-  minimizeBtn.Segments(8);
-  maximizeBtn.Segments(8);
-  exitBtn.AddText("X", {}, 24);
-  maximizeBtn.AddText("O", {}, 24);
-  minimizeBtn.AddText("_", {}, 24);
+  exitBtn.ApplyStyle(btnstyle);
+  minimizeBtn.ApplyStyle(btnstyle);
+  maximizeBtn.ApplyStyle(btnstyle);
+  exitBtn.AddText("X");
+  maximizeBtn.AddText("O");
+  minimizeBtn.AddText("_");
 
   Vector2 mouse = GetMousePosition();
   Vector2 scale = Fumbo::Utils::GetUIScale();
