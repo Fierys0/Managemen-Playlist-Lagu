@@ -27,7 +27,6 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build Raylib as a static library" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
-add_subdirectory(engine/lib/raylib)
 add_subdirectory(engine)
 
 # --- Asset Packing ---
@@ -40,8 +39,8 @@ set_target_properties(fumbo_engine PROPERTIES
 
 # Compile the asset packager tool from the engine
 add_executable(asset_pack EXCLUDE_FROM_ALL engine/tools/pack_assets.cpp)
-target_include_directories(asset_pack PRIVATE 
-    engine 
+target_include_directories(asset_pack PRIVATE
+    engine
     engine/tools
     engine/lib/raylib/src
     src
@@ -67,7 +66,6 @@ add_custom_command(
     VERBATIM
 )
 
-# Target to ensure packing happens (no longer ALL as it is a dependency of Magfy)
 add_custom_target(pack_assets DEPENDS ${ASSET_PACK_OUTPUT})
 
 file(GLOB_RECURSE GAME_SOURCES src/core/*.cpp src/states/*.cpp src/main.cpp)
@@ -99,23 +97,6 @@ target_link_libraries(${PROJECT_NAME}
     PRIVATE
         fumbo_engine
 )
-
-if(WIN32)
-  # Copy mpv DLL next to executable
-  # We still need to know where it is.
-  set(MPV_ROOT ${CMAKE_SOURCE_DIR}/engine/lib/windows/mpv)
-
-  target_include_directories(${PROJECT_NAME}
-        PRIVATE
-            ${MPV_ROOT}/include
-    )
-
-  add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${MPV_ROOT}/libmpv-2.dll
-            $<TARGET_FILE_DIR:${PROJECT_NAME}>
-    )
-endif()
 
 if(WIN32)
   target_link_libraries(${PROJECT_NAME}

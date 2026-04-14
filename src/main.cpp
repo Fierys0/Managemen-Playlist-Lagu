@@ -7,8 +7,8 @@
 
 int main() {
 
-  Fumbo::Engine::Instance().Init(1280, 720, "Magfy", 60);
   SetConfigFlags(FLAG_WINDOW_UNDECORATED);
+  Fumbo::Engine::Instance().Init(1280, 720, "Magfy", 60);
   Fumbo::Assets::AddAssetPack("data.fpk");
   auto appCore = std::make_shared<AppCore>();
   LoadGlobalAssets();
