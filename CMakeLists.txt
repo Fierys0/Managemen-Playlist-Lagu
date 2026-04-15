@@ -27,6 +27,9 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build Raylib as a static library" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_GAMES OFF CACHE BOOL "" FORCE)
+if(LINUX)
+  add_subdirectory(engine/lib/raylib)
+endif()
 add_subdirectory(engine)
 
 # --- Asset Packing ---
