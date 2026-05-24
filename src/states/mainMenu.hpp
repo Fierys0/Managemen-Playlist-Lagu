@@ -11,5 +11,6 @@ public:
 
 private:
   Fumbo::UI::Button settingBtn;
+  Fumbo::UI::Button plusBtn;
   Texture2D settingTex;
 };

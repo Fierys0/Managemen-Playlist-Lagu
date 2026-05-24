@@ -4,7 +4,8 @@
 
 extern Font SpaceB;
 
-typedef struct colortheme {
+typedef struct colortheme
+{
   int id;
   std::string name{};
   Color prim1{};
@@ -15,6 +16,7 @@ typedef struct colortheme {
 } ColorTheme;
 
 extern Fumbo::UI::ButtonStyle btnstyle;
+extern Fumbo::UI::ButtonStyle rectangleBtnStyle;
 
 extern ColorTheme currentTheme;
 extern ColorTheme darkTheme;
