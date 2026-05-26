@@ -45,4 +45,6 @@ void Settings::DrawDirty() {
   std::string themeNow = "Current Theme: " + currentTheme.name;
   Fumbo::Graphic2D::DrawText(themeNow, {320, 113}, SpaceB, 24,
                              currentTheme.second1);
+  Fumbo::Graphic2D::DrawText("xxxxxx", {1200, 600}, SpaceB, 15,
+                             currentTheme.second1);
 }
