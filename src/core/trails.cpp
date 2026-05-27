@@ -121,7 +121,7 @@ void MouseTrails::Draw() {
       alphaFactor = fmaxf(0.0f, 1.0f - (dist - 150.0f) / 150.0f);
     }
 
-    unsigned char alpha = (unsigned char)(127.5f * alphaFactor);
+    unsigned char alpha = (unsigned char)(190 * alphaFactor);
     if (alpha < 6)
       continue; // skip invisible particles
 
