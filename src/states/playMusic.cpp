@@ -43,9 +43,12 @@ void PlayMusic::Init() {
   auto &audio = Fumbo::Engine::Instance().GetAudioManager();
 
   // Muat tekstur ikon tombol
-  m_playIcon = Fumbo::Assets::LoadTextureThemed("assets/images/playIcon.png", currentTheme.second2);
-  m_pauseIcon = Fumbo::Assets::LoadTextureThemed("assets/images/pauseIcon.png", currentTheme.second2);
-  m_nextIcon = Fumbo::Assets::LoadTextureThemed("assets/images/nextIcon.png", currentTheme.second2);
+  m_playIcon = Fumbo::Assets::LoadTextureThemed("assets/images/playIcon.png",
+                                                currentTheme.second2);
+  m_pauseIcon = Fumbo::Assets::LoadTextureThemed("assets/images/pauseIcon.png",
+                                                 currentTheme.second2);
+  m_nextIcon = Fumbo::Assets::LoadTextureThemed("assets/images/nextIcon.png",
+                                                currentTheme.second2);
 
   // Membalik nextIcon secara horizontal untuk membuat prevIcon
   Image img = Fumbo::Assets::LoadImage("assets/images/nextIcon.png");
@@ -263,7 +266,7 @@ void PlayMusic::DrawDirty() {
   float infoY = COVER_Y + COVER_SIZE + 20.0f;
 
   Fumbo::Graphic2D::DrawText(m_displayTitle, {infoX + 10, infoY}, SpaceB, 32,
-                             WHITE);
+                             currentTheme.second1);
   Fumbo::Graphic2D::DrawText(m_displayArtist, {infoX + 10, infoY + 40}, SpaceB,
                              22, {160, 165, 180, 255});
   if (!m_displayAlbum.empty())
@@ -310,8 +313,8 @@ void PlayMusic::DrawDirty() {
 
   // Label waktu main
   std::string playedTimeStr = FormatTime(audio.GetMusicPlayed(0));
-  Fumbo::Graphic2D::DrawText(playedTimeStr, {progX - 45, PROG_Y - 6}, SpaceB, 14,
-                             {110, 115, 135, 255});
+  Fumbo::Graphic2D::DrawText(playedTimeStr, {progX - 45, PROG_Y - 6}, SpaceB,
+                             14, {110, 115, 135, 255});
 
   if (state.CurrentTrack() && state.CurrentTrack()->durationMs > 0) {
     int sec = (int)(state.CurrentTrack()->durationMs / 1000);
