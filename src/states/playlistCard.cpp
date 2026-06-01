@@ -16,7 +16,8 @@ void PlaylistCard::Draw(float offsetX) {
   drawBounds.x += offsetX;
 
   // Latar belakang kartu dengan sudut membulat
-  Fumbo::Graphic2D::DrawRectangleRounded(drawBounds, 0.08f, 8, currentTheme.prim2);
+  Fumbo::Graphic2D::DrawRectangleRounded(drawBounds, 0.08f, 8,
+                                         currentTheme.prim2);
 
   // Gambar sampul
   float imgH = drawBounds.height - 70.0f;
@@ -37,8 +38,9 @@ void PlaylistCard::Draw(float offsetX) {
   }
 
   // Nama playlist
-  Fumbo::Graphic2D::DrawText(m_title, {drawBounds.x + 10, drawBounds.y + imgH + 6},
-                             SpaceB, 22, WHITE);
+  Fumbo::Graphic2D::DrawText(m_title,
+                             {drawBounds.x + 10, drawBounds.y + imgH + 6},
+                             SpaceB, 22, currentTheme.second1);
 
   // Jumlah lagu
   std::string sub =
@@ -49,15 +51,17 @@ void PlaylistCard::Draw(float offsetX) {
   // Gambar tombol Ubah di sudut kanan bawah kartu
   Rectangle editRec = {drawBounds.x + drawBounds.width - 60,
                        drawBounds.y + drawBounds.height - 38, 50, 26};
-  bool hoverEdit = (offsetX == 0.0f) && CheckCollisionPointRec(GetMousePosition(), editRec);
-  Fumbo::Graphic2D::DrawRectangleRounded(editRec, 0.2f, 4,
-                                         hoverEdit ? currentTheme.second2
-                                                   : currentTheme.prim1);
+  bool hoverEdit =
+      (offsetX == 0.0f) && CheckCollisionPointRec(GetMousePosition(), editRec);
+  Fumbo::Graphic2D::DrawRectangleRounded(
+      editRec, 0.2f, 4, hoverEdit ? currentTheme.second2 : currentTheme.prim1);
   Fumbo::Graphic2D::DrawText(Lang::Get("Ubah", "Edit"),
-                             {editRec.x + 8, editRec.y + 6}, SpaceB, 13, WHITE);
+                             {editRec.x + 8, editRec.y + 6}, SpaceB, 13,
+                             currentTheme.second1);
 
   // Sorotan saat hover (hanya jika tidak sedang beranimasi)
-  if (offsetX == 0.0f && CheckCollisionPointRec(GetMousePosition(), drawBounds)) {
+  if (offsetX == 0.0f &&
+      CheckCollisionPointRec(GetMousePosition(), drawBounds)) {
     Fumbo::Graphic2D::DrawRectangleRoundedLines(drawBounds, 0.08f, 8,
                                                 currentTheme.second2);
   }
