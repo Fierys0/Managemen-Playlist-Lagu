@@ -56,7 +56,8 @@ void MainMenu::RebuildCards() {
   m_lastPlaylistCount = (int)playlists.size();
 
   float startX = CONTENT_X + 70.0f;
-  float startY = CONTENT_Y + 50.0f; // Shifted down to make room for header title
+  float startY =
+      CONTENT_Y + 50.0f; // Shifted down to make room for header title
 
   for (size_t i = 0; i < playlists.size(); ++i) {
     const auto &pl = playlists[i];
@@ -67,7 +68,8 @@ void MainMenu::RebuildCards() {
     float cardX = startX + col * (CARD_W + CARD_GAP);
     float cardY = startY + row * (CARD_H + CARD_GAP);
 
-    // Muat tekstur sampul ambil dari coverPath playlist terlebih dahulu lalu dari lagu pertama yang punya cover atau gambar placeholder
+    // Muat tekstur sampul ambil dari coverPath playlist terlebih dahulu lalu
+    // dari lagu pertama yang punya cover atau gambar placeholder
     Texture2D tex{};
     bool loaded = false;
     if (!pl.coverPath.empty()) {
@@ -119,6 +121,7 @@ void MainMenu::Update() {
     int maxPages = (totalPlaylists + 7) / 8;
     if (m_currentPage >= maxPages) {
       m_currentPage = (maxPages > 0) ? (maxPages - 1) : 0;
+      RebuildCards();
     }
   }
 
