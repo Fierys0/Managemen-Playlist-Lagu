@@ -11,7 +11,7 @@ void MouseTrails::Init() {
 
   int count = 0;
   float spacing = 26.0f;
-  float hexHeight = spacing * 0.866025f; // sqrt(3)/2
+  float hexHeight = spacing * 0.866025f; // tinggi heksagon: sqrt(3)/2
 
   for (float y = -100.0f; y < h + 100.0f; y += hexHeight) {
     bool stagger = ((int)(y / hexHeight) % 2) != 0;
@@ -25,19 +25,19 @@ void MouseTrails::Init() {
       m_particles[count].pos = {x, y};
       m_particles[count].vel = {0, 0};
 
-      // Static spatial color gradient based on home position
+      // Gradien warna spasial statis berdasarkan posisi asal
       float factor = (y + x) / (w + h);
       m_particles[count].hueOffset = 240.0f + factor * 120.0f;
       m_particles[count].hueSpeed = 0.0f;
-      m_particles[count].baseSize = 2.0f; // structured crisp size
+      m_particles[count].baseSize = 2.0f;
 
       count++;
     }
   }
 
-  // Fill remaining particles if screen was ultra-wide (safety fallback)
+  // Isi sisa partikel jika layar sangat lebar (keamanan cadangan)
   for (; count < PARTICLE_COUNT; count++) {
-    m_particles[count] = m_particles[0]; // just duplicate first to keep safe
+    m_particles[count] = m_particles[0];
   }
 }
 
@@ -55,25 +55,25 @@ void MouseTrails::Update() {
     Vector2 scale = Fumbo::Utils::GetUIScale();
     m_cursorPos = {mouse.x / scale.x, mouse.y / scale.y};
   }
-  // Cursor position freezes when mouse leaves window
+  // Posisi kursor beku saat mouse keluar dari jendela
 
   for (int i = 0; i < PARTICLE_COUNT; i++) {
     CursorParticle &p = m_particles[i];
 
     p.hueOffset += p.hueSpeed * dt;
 
-    // Vector from particle's home to cursor
+    // Vektor dari posisi asal partikel ke kursor
     float dx = m_cursorPos.x - p.homePos.x;
     float dy = m_cursorPos.y - p.homePos.y;
     float dist = sqrtf(dx * dx + dy * dy);
 
-    // Gravity pull: particles are displaced toward cursor
-    // Pull is strong near cursor, decays exponentially with distance
-    float pullMax = 70.0f;    // max displacement in pixels
-    float pullDecay = 280.0f; // radius of influence
+    // Tarikan gravitasi: partikel tertarik ke kursor
+    // Tarikan kuat di dekat kursor, melemah secara eksponensial dengan jarak
+    float pullMax = 70.0f;    // pergeseran maksimum dalam piksel
+    float pullDecay = 280.0f; // radius pengaruh
     float pull = pullMax * expf(-dist / pullDecay);
 
-    // Target = home position displaced toward cursor
+    // Target = posisi asal yang digeser ke arah kursor
     Vector2 target;
     if (dist > 0.5f) {
       float invDist = 1.0f / dist;
@@ -83,11 +83,11 @@ void MouseTrails::Update() {
       target = p.homePos;
     }
 
-    // Spring toward target position
+    // Pegas menuju posisi target
     float springK = 8.0f;
     p.vel.x += (target.x - p.pos.x) * springK * dt;
     p.vel.y += (target.y - p.pos.y) * springK * dt;
-    p.vel.x *= 0.90f; // damping
+    p.vel.x *= 0.90f; // redaman
     p.vel.y *= 0.90f;
     p.pos.x += p.vel.x;
     p.pos.y += p.vel.y;
@@ -98,38 +98,39 @@ void MouseTrails::Draw() {
   for (int i = 0; i < PARTICLE_COUNT; i++) {
     const CursorParticle &p = m_particles[i];
 
-    // Distance from particle's current position to cursor
+    // Jarak dari posisi partikel saat ini ke kursor
     float dx = p.pos.x - m_cursorPos.x;
     float dy = p.pos.y - m_cursorPos.y;
     float dist = sqrtf(dx * dx + dy * dy);
 
-    // Blank zone around cursor based on configurable variable
+    // Zona kosong di sekitar kursor
     if (dist < m_blankRadius)
       continue;
 
-    // Size morphing: massive wavelength so only one wave crest is visible
+    // Morfing ukuran: panjang gelombang besar agar hanya satu puncak yang
+    // terlihat
     float wavePhase = dist * 0.018f - m_timeElapsed * 0.5f;
     float currentSize = 1.3f + sinf(wavePhase) * 1.0f;
 
-    // Alpha fade-in outside the blank radius to prevent sharp popping edge
+    // Alpha memudar di luar zona kosong agar tepinya tidak tajam
     float fadeRadius = 45.0f;
     float alphaFactor = 1.0f;
     if (dist < m_blankRadius + fadeRadius) {
       alphaFactor = (dist - m_blankRadius) / fadeRadius;
     } else if (dist > 150.0f) {
-      // Fade out much sooner so the effect itself isn't massively wide
+      // Memudar lebih cepat agar efek tidak terlalu lebar
       alphaFactor = fmaxf(0.0f, 1.0f - (dist - 150.0f) / 150.0f);
     }
 
     unsigned char alpha = (unsigned char)(190 * alphaFactor);
     if (alpha < 6)
-      continue; // skip invisible particles
+      continue; // lewati partikel yang tidak terlihat
 
-    // Color based on spatial gradient
+    // Warna berdasarkan gradien spasial
     Color c = ColorFromHSV(p.hueOffset, 0.85f, 0.95f);
     c.a = alpha;
 
-    // Motion streak when particle is moving fast
+    // Jejak gerak saat partikel bergerak cepat
     float speed = sqrtf(p.vel.x * p.vel.x + p.vel.y * p.vel.y);
     if (speed > 1.5f && currentSize > 1.0f) {
       float trailLen = fminf(speed * 0.35f, 8.0f);

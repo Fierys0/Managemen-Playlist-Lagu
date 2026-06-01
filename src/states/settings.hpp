@@ -10,6 +10,8 @@ public:
   void DrawDirty() override;
 
 private:
-  Fumbo::UI::Button toggleTheme;
-  Fumbo::UI::Button backBtn;
+  Fumbo::UI::Button m_toggleThemeBtn;
+  Fumbo::UI::Button m_toggleTrailsBtn;
+  Fumbo::UI::Button m_toggleLangBtn;
+  Fumbo::UI::Button m_backBtn;
 };
