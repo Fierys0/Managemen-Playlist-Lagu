@@ -3,7 +3,6 @@
 #include "../core/globals.hpp"
 #include "../core/vlcMetadata.hpp"
 #include "fumbo.hpp"
-#include "fumbo/external/portable-file-dialogs.h"
 #include "mainMenu.hpp"
 #include <algorithm>
 #include <memory>
@@ -109,11 +108,10 @@ void AddPlaylist::Cleanup() {
 }
 
 void AddPlaylist::OpenAudioPicker() {
-  pfd::open_file dialog("Pilih file audio", "",
-                        {"File Audio (MP3, OGG, WAV, QOA, XM, MOD)",
-                         "*.mp3 *.ogg *.wav *.qoa *.xm *.mod"},
-                        pfd::opt::multiselect);
-  auto files = dialog.result();
+  auto files = Fumbo::FileDialog::OpenFiles(
+      "Pilih file audio",
+      {"File Audio (MP3, OGG, WAV, QOA, XM, MOD)",
+       "*.mp3 *.ogg *.wav *.qoa *.xm *.mod"});
   for (const auto &path : files) {
     // Jangan tambahkan duplikat
     bool dup = false;
@@ -130,13 +128,11 @@ void AddPlaylist::OpenAudioPicker() {
 }
 
 void AddPlaylist::OpenCoverPicker() {
-  pfd::open_file dialog(
-      "Pilih gambar sampul", "",
-      {"File Gambar", "*.png *.jpg *.jpeg *.bmp *.gif", "Semua file", "*"},
-      pfd::opt::none);
-  auto files = dialog.result();
-  if (!files.empty()) {
-    m_coverPath = files[0];
+  std::string picked = Fumbo::FileDialog::OpenFile(
+      "Pilih gambar sampul",
+      {"File Gambar", "*.png *.jpg *.jpeg *.bmp *.gif", "Semua file", "*"});
+  if (!picked.empty()) {
+    m_coverPath = picked;
     if (m_coverTex.id != 0)
       UnloadTexture(m_coverTex);
     Image img = LoadImage(m_coverPath.c_str());
