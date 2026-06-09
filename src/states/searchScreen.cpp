@@ -67,7 +67,7 @@ void SearchScreen::Init() {
       {SS_SEARCH_X + SS_SEARCH_W - 62.0f, SS_SEARCH_Y, 56.0f, SS_SEARCH_H});
   m_clearBtn.ApplyStyle(btnstyle);
   m_clearBtn.Roundness(0.4f);
-  m_clearBtn.AddText("×", SpaceB, 30, {200, 80, 80, 255});
+  m_clearBtn.AddText("X", SpaceB, 30, {200, 80, 80, 255});
 
   RebuildResults();
 }
@@ -295,10 +295,11 @@ void SearchScreen::DrawDirty() {
       float scale = SS_COVER_SZ / (float)std::max(tex.width, tex.height);
       float dw = tex.width * scale;
       float dh = tex.height * scale;
-      DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height},
-                     {coverX + (SS_COVER_SZ - dw) / 2.0f,
-                      coverY + (SS_COVER_SZ - dh) / 2.0f, dw, dh},
-                     {0, 0}, 0.0f, WHITE);
+      Fumbo::Graphic2D::DrawTexturePro(
+          tex, {0, 0, (float)tex.width, (float)tex.height},
+          {coverX + (SS_COVER_SZ - dw) / 2.0f,
+           coverY + (SS_COVER_SZ - dh) / 2.0f, dw, dh},
+          {0, 0}, 0.0f, WHITE);
     }
 
     // Gambar nama playlist dan batas panjang teks agar tidak melebihi lebar
