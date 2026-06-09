@@ -4,7 +4,6 @@
 #include "../core/globals.hpp"
 #include "../core/vlcMetadata.hpp"
 #include "fumbo.hpp"
-
 #include <algorithm>
 #include <cmath>
 #include <cstdio>

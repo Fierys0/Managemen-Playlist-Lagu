@@ -157,7 +157,7 @@ void MainMenu::Update() {
     }
   }
 
-  // Periksa klik pada setiap kartu playlist (hanya jika tidak sedang transisi)
+  // cek klik pada setiap kartu playlist (jika tidak sedang transisi)
   if (m_transitionProgress >= 1.0f) {
     for (auto &entry : m_cards) {
       int cardIndex = -1;

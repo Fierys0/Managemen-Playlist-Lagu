@@ -1,8 +1,11 @@
 #include "appState.hpp"
 #include "fumbo.hpp"
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
+
+namespace fs = std::filesystem;
 
 // Fungsi bantu JSON: escape string untuk output JSON.
 static std::string jsonEsc(const std::string &s) {
@@ -115,74 +118,133 @@ static bool parseJsonBool(const std::string &json, size_t &pos) {
   return v;
 }
 
-// Kembalikan path file JSON tempat data playlist disimpan (di samping binary).
-std::string AppState::SaveFilePath() {
-  std::string dir = Fumbo::Engine::Instance().GetAppDir();
-  if (dir.empty())
-    dir = "./";
-  if (!dir.empty() && dir.back() != '/' && dir.back() != '\\')
-    dir += '/';
-  return dir + "playlists.json";
+// ── Path helpers ───────────────────────────────────────────────────
+// Kembalikan path folder user/ (membuat jika belum ada).
+std::string AppState::UserDir() {
+  std::string base = Fumbo::Engine::Instance().GetAppDir();
+  if (base.empty())
+    base = ".";
+  if (base.back() != '/' && base.back() != '\\')
+    base += '/';
+  std::string ud = base + "user";
+  try {
+    fs::create_directories(ud);
+  } catch (...) {
+    // Gagal membuat folder — save/load akan gagal secara halus
+  }
+  return ud + '/';
 }
 
-// Simpan semua playlist ke file JSON.
+std::string AppState::PlaylistsFilePath() {
+  return UserDir() + "playlists.json";
+}
+
+std::string AppState::PreferencesFilePath() {
+  return UserDir() + "preferences.json";
+}
+
+// ── Simpan ke dua file terpisah ──────────────────────────────────────────
 void AppState::SaveToFile() const {
-  std::ofstream f(SaveFilePath());
-  if (!f)
-    return;
+  // 1. user/preferences.json — pengaturan pengguna
+  {
+    std::ofstream pf(PreferencesFilePath());
+    if (pf) {
+      pf << "{\n";
+      pf << "  \"trailsEnabled\": " << (trailsEnabled ? "true" : "false") << ",\n";
+      pf << "  \"language\": \"" << jsonEsc(language) << "\",\n";
+      pf << "  \"themeName\": \"" << jsonEsc(themeName) << "\"\n";
+      pf << "}\n";
+    }
+  }
 
-  f << "{\n";
-  f << "  \"nextPlaylistId\": " << nextPlaylistId << ",\n";
-  f << "  \"trailsEnabled\": " << (trailsEnabled ? "true" : "false") << ",\n";
-  f << "  \"language\": \"" << jsonEsc(language) << "\",\n";
-  f << "  \"themeName\": \"" << jsonEsc(themeName) << "\",\n";
-  f << "  \"playlists\": [\n";
+  // 2. user/playlists.json — data playlist
+  {
+    std::ofstream f(PlaylistsFilePath());
+    if (!f)
+      return;
 
-  for (size_t pi = 0; pi < playlists.size(); ++pi) {
-    const auto &pl = playlists[pi];
-    f << "    {\n";
-    f << "      \"id\": " << pl.id << ",\n";
-    f << "      \"name\": \"" << jsonEsc(pl.name) << "\",\n";
-    f << "      \"coverPath\": \"" << jsonEsc(pl.coverPath) << "\",\n";
-    f << "      \"description\": \"" << jsonEsc(pl.description) << "\",\n";
-    f << "      \"tracks\": [\n";
-    for (size_t ti = 0; ti < pl.tracks.size(); ++ti) {
-      const auto &t = pl.tracks[ti];
-      f << "        {\n";
-      f << "          \"filePath\": \"" << jsonEsc(t.filePath) << "\",\n";
-      f << "          \"title\": \"" << jsonEsc(t.title) << "\",\n";
-      f << "          \"artist\": \"" << jsonEsc(t.artist) << "\",\n";
-      f << "          \"album\": \"" << jsonEsc(t.album) << "\",\n";
-      f << "          \"coverArtPath\": \"" << jsonEsc(t.coverArtPath)
-        << "\",\n";
-      f << "          \"durationMs\": " << t.durationMs << "\n";
-      f << "        }";
-      if (ti + 1 < pl.tracks.size())
+    f << "{\n";
+    f << "  \"nextPlaylistId\": " << nextPlaylistId << ",\n";
+    f << "  \"playlists\": [\n";
+
+    for (size_t pi = 0; pi < playlists.size(); ++pi) {
+      const auto &pl = playlists[pi];
+      f << "    {\n";
+      f << "      \"id\": " << pl.id << ",\n";
+      f << "      \"name\": \"" << jsonEsc(pl.name) << "\",\n";
+      f << "      \"coverPath\": \"" << jsonEsc(pl.coverPath) << "\",\n";
+      f << "      \"description\": \"" << jsonEsc(pl.description) << "\",\n";
+      f << "      \"tracks\": [\n";
+      for (size_t ti = 0; ti < pl.tracks.size(); ++ti) {
+        const auto &t = pl.tracks[ti];
+        f << "        {\n";
+        f << "          \"filePath\": \"" << jsonEsc(t.filePath) << "\",\n";
+        f << "          \"title\": \"" << jsonEsc(t.title) << "\",\n";
+        f << "          \"artist\": \"" << jsonEsc(t.artist) << "\",\n";
+        f << "          \"album\": \"" << jsonEsc(t.album) << "\",\n";
+        f << "          \"coverArtPath\": \"" << jsonEsc(t.coverArtPath) << "\",\n";
+        f << "          \"durationMs\": " << t.durationMs << "\n";
+        f << "        }";
+        if (ti + 1 < pl.tracks.size())
+          f << ",";
+        f << "\n";
+      }
+      f << "      ]\n";
+      f << "    }";
+      if (pi + 1 < playlists.size())
         f << ",";
       f << "\n";
     }
-    f << "      ]\n";
-    f << "    }";
-    if (pi + 1 < playlists.size())
-      f << ",";
-    f << "\n";
+    f << "  ]\n";
+    f << "}\n";
   }
-  f << "  ]\n";
-  f << "}\n";
 }
 
-// Muat semua playlist dari file JSON.
+// ── Muat dari dua file terpisah ─────────────────────────────────────────
 void AppState::LoadFromFile() {
-  std::ifstream f(SaveFilePath());
+  // 1. Muat user/preferences.json
+  //    Jika tidak ada, nilai default dari deklarasi struct tetap digunakan.
+  {
+    std::ifstream pf(PreferencesFilePath());
+    if (pf) {
+      std::string json((std::istreambuf_iterator<char>(pf)),
+                       std::istreambuf_iterator<char>());
+      size_t pos = 0;
+
+      auto tePos = json.find("\"trailsEnabled\"");
+      if (tePos != std::string::npos) {
+        pos = tePos + 15;
+        trailsEnabled = parseJsonBool(json, pos);
+      }
+
+      auto langPos = json.find("\"language\"");
+      if (langPos != std::string::npos) {
+        pos = langPos + 10;
+        language = parseJsonString(json, pos);
+      } else {
+        language = "id";
+      }
+
+      auto themePos = json.find("\"themeName\"");
+      if (themePos != std::string::npos) {
+        pos = themePos + 11;
+        themeName = parseJsonString(json, pos);
+      } else {
+        themeName = "dark";
+      }
+    }
+  }
+
+  // 2. Muat user/playlists.json
+  playlists.clear();
+  nextPlaylistId = 1;
+
+  std::ifstream f(PlaylistsFilePath());
   if (!f)
     return;
 
   std::string json((std::istreambuf_iterator<char>(f)),
                    std::istreambuf_iterator<char>());
-
-  playlists.clear();
-  nextPlaylistId = 1;
-
   size_t pos = 0;
 
   // Baca nextPlaylistId
@@ -192,31 +254,6 @@ void AppState::LoadFromFile() {
     while (pos < json.size() && (json[pos] < '0' || json[pos] > '9'))
       ++pos;
     nextPlaylistId = (int)parseJsonNumber(json, pos);
-  }
-
-  // Baca trailsEnabled
-  auto tePos = json.find("\"trailsEnabled\"");
-  if (tePos != std::string::npos) {
-    pos = tePos + 15;
-    trailsEnabled = parseJsonBool(json, pos);
-  }
-
-  // Baca language
-  auto langPos = json.find("\"language\"");
-  if (langPos != std::string::npos) {
-    pos = langPos + 10;
-    language = parseJsonString(json, pos);
-  } else {
-    language = "id";
-  }
-
-  // Baca themeName
-  auto themePos = json.find("\"themeName\"");
-  if (themePos != std::string::npos) {
-    pos = themePos + 11;
-    themeName = parseJsonString(json, pos);
-  } else {
-    themeName = "dark";
   }
 
   // Baca array playlists
@@ -231,7 +268,6 @@ void AppState::LoadFromFile() {
   ++pos;
 
   while (pos < json.size()) {
-    // Lewati ke '{' berikutnya atau hentikan pada ']'
     while (pos < json.size() && json[pos] != '{' && json[pos] != ']')
       ++pos;
     if (pos >= json.size() || json[pos] == ']')
@@ -240,7 +276,6 @@ void AppState::LoadFromFile() {
 
     Playlist pl;
     while (pos < json.size() && json[pos] != '}') {
-      // Cari kunci
       while (pos < json.size() && json[pos] != '"' && json[pos] != '}')
         ++pos;
       if (pos >= json.size() || json[pos] == '}')
@@ -259,7 +294,6 @@ void AppState::LoadFromFile() {
       } else if (key == "description") {
         pl.description = parseJsonString(json, pos);
       } else if (key == "tracks") {
-        // Baca array tracks
         while (pos < json.size() && json[pos] != '[')
           ++pos;
         ++pos; // lewati [

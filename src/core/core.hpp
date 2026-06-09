@@ -13,7 +13,7 @@ public:
 
   // Layar mana yang sedang ditampilkan (digunakan untuk menyoroti tombol
   // navigasi aktif)
-  enum class Screen { Home, Play, Settings };
+  enum class Screen { Home, Play, Settings, Search };
   static Screen currentScreen;
 
 private:
@@ -31,11 +31,13 @@ private:
   Fumbo::UI::Button navHomeBtn;
   Fumbo::UI::Button navPlayBtn;
   Fumbo::UI::Button navSettingsBtn;
+  Fumbo::UI::Button navSearchBtn;
 
   // Tekstur ikon navigasi
   Texture2D m_navHomeTex{};
   Texture2D m_navPlayTex{};
   Texture2D m_navSettingsTex{};
+  Texture2D m_navSearchTex{};
 
   // Pengingat "pilih playlist dulu" saat Play ditekan tanpa playlist aktif
   float m_noPlaylistNudgeTimer = 0.0f;

@@ -20,19 +20,28 @@ endif()
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # ── libvlc ────────────────────────────────────────────────────────────────
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBVLC REQUIRED libvlc)
+# On Linux use the system libvlc via pkg-config.
+# On Windows use the bundled VLC SDK located at src/lib/windows/vlc/sdk/.
+if(WIN32)
+  set(VLC_WIN_SDK "${CMAKE_SOURCE_DIR}/src/lib/windows/vlc/sdk")
+  set(LIBVLC_INCLUDE_DIRS "${VLC_WIN_SDK}/include")
+  set(LIBVLC_LIBRARIES    "${VLC_WIN_SDK}/lib/libvlc.lib"
+                           "${VLC_WIN_SDK}/lib/libvlccore.lib")
+  set(LIBVLC_CFLAGS_OTHER "")
+  message(STATUS "Using bundled Windows VLC SDK: ${VLC_WIN_SDK}")
+else()
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(LIBVLC REQUIRED libvlc)
+endif()
 
-# ── Raylib ────────────────────────────────────────────────────────────────
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build Raylib as a static library" FORCE)
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(BUILD_GAMES    OFF CACHE BOOL "" FORCE)
-if(LINUX)
+if(LINUX OR WIN32)
   add_subdirectory(engine/lib/raylib)
 endif()
 add_subdirectory(engine)
 
-# ── Asset packing ──────────────────────────────────────────────────────────
 set_target_properties(fumbo_engine PROPERTIES
   LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/magfy
   RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/magfy
@@ -109,4 +118,26 @@ if(WIN32)
   target_link_libraries(${PROJECT_NAME}
         PRIVATE winmm
     )
+
+  # ── Copy VLC DLLs next to the executable after build ──────────────────
+  # The DLLs are NOT part of the SDK archive; copy them from your VLC
+  # installation (e.g. C:/Program Files/VideoLAN/VLC/) into:
+  #   src/lib/windows/vlc/
+  # so that the two files below exist.
+  set(VLC_DLL_DIR "${CMAKE_SOURCE_DIR}/src/lib/windows/vlc")
+  foreach(_dll libvlc.dll libvlccore.dll)
+    if(EXISTS "${VLC_DLL_DIR}/${_dll}")
+      add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          "${VLC_DLL_DIR}/${_dll}"
+          "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${_dll}"
+        COMMENT "Copying ${_dll} to output directory"
+      )
+    else()
+      message(WARNING
+        "VLC DLL not found: ${VLC_DLL_DIR}/${_dll}\n"
+        "Copy libvlc.dll and libvlccore.dll from your VLC install into "
+        "src/lib/windows/vlc/ for the app to run on Windows.")
+    endif()
+  endforeach()
 endif()

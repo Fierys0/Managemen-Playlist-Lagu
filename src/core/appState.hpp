@@ -95,10 +95,12 @@ public:
   std::string language{"id"};
   std::string themeName{"dark"};
 
-  // Persistensi data ke file
-  static std::string SaveFilePath();
-  void SaveToFile() const;
-  void LoadFromFile();
+  // Persistensi data ke dua file terpisah di dalam subfolder user/
+  static std::string UserDir();             // Buat & kembalikan folder user/
+  static std::string PlaylistsFilePath();   // user/playlists.json
+  static std::string PreferencesFilePath(); // user/preferences.json
+  void SaveToFile() const;   // Simpan playlist & preferensi ke file masing-masing
+  void LoadFromFile();       // Muat playlist & preferensi dari file masing-masing
 
 private:
   AppState() = default;

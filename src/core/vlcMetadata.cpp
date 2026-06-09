@@ -13,9 +13,10 @@ static libvlc_instance_t *s_vlc = nullptr;
 void VlcMeta::Init() {
   if (s_vlc)
     return;
-  // Sembunyikan output VLC dengan menonaktifkan video
-  const char *args[] = {"--quiet", "--no-video"};
-  s_vlc = libvlc_new(2, args);
+  // Sembunyikan output VLC
+  // --quiet menekan log, --no-video tidak dibutuhkan untuk metadata saja
+  const char *args[] = {"--quiet"};
+  s_vlc = libvlc_new(1, args);
 }
 
 void VlcMeta::Shutdown() {
@@ -90,7 +91,17 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath) {
   std::string artUrl = getMeta(libvlc_meta_ArtworkURL);
   if (!artUrl.empty()) {
     // Hapus awalan "file://" untuk mendapatkan path absolut sistem file
-    if (artUrl.substr(0, 7) == "file://") {
+    // Windows: "file:///C:/..." → strip "file:///" → "C:/..."
+    // Linux:   "file:///home/..." → strip "file://" → "/home/..."
+    if (artUrl.substr(0, 8) == "file:///") {
+#ifdef _WIN32
+      // Pada Windows awalan 3-slash → tinggalkan huruf drive
+      t.coverArtPath = artUrl.substr(8);
+#else
+      // Pada Linux awalan 3-slash → path absolut dimulai dari '/'
+      t.coverArtPath = artUrl.substr(7);
+#endif
+    } else if (artUrl.substr(0, 7) == "file://") {
       t.coverArtPath = artUrl.substr(7);
     } else {
       t.coverArtPath = artUrl;
