@@ -19,9 +19,9 @@ endif()
 # Enable Position Independent Code for all targets (required for shared libraries)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# ── libvlc ────────────────────────────────────────────────────────────────
-# On Linux use the system libvlc via pkg-config.
-# On Windows use the bundled VLC SDK located at src/lib/windows/vlc/sdk/.
+# Konfigurasi libvlc berdasarkan platform.
+# Pada Linux gunakan libvlc dari sistem via pkg-config.
+# Pada Windows gunakan SDK yang sudah dibundel di src/lib/windows/vlc/sdk.
 if(WIN32)
   set(VLC_WIN_SDK "${CMAKE_SOURCE_DIR}/src/lib/windows/vlc/sdk")
   set(LIBVLC_INCLUDE_DIRS "${VLC_WIN_SDK}/include")
@@ -73,7 +73,7 @@ add_custom_command(
 
 add_custom_target(pack_assets DEPENDS ${ASSET_PACK_OUTPUT})
 
-# ── Game sources ───────────────────────────────────────────────────────────
+# Daftar semua file sumber game.
 file(GLOB_RECURSE GAME_SOURCES
     src/core/*.cpp
     src/states/*.cpp
@@ -119,11 +119,8 @@ if(WIN32)
         PRIVATE winmm
     )
 
-  # ── Copy VLC DLLs next to the executable after build ──────────────────
-  # The DLLs are NOT part of the SDK archive; copy them from your VLC
-  # installation (e.g. C:/Program Files/VideoLAN/VLC/) into:
-  #   src/lib/windows/vlc/
-  # so that the two files below exist.
+  # Salin DLL VLC ke direktori output setelah build selesai.
+  # File DLL tidak tersedia di dalam SDK, salin dari instalasi VLC ke src/lib/windows/vlc.
   set(VLC_DLL_DIR "${CMAKE_SOURCE_DIR}/src/lib/windows/vlc")
   foreach(_dll libvlc.dll libvlccore.dll)
     if(EXISTS "${VLC_DLL_DIR}/${_dll}")

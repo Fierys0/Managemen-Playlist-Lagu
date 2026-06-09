@@ -11,10 +11,10 @@
 #include <memory>
 #include <string>
 
-// ── Konstanta tata letak ──────────────────────────────────────────────────
-static constexpr float SS_SIDEBAR_W  = 72.0f;
+// Tata letak layar pencarian.
+static constexpr float SS_SIDEBAR_W = 72.0f;
 static constexpr float SS_TITLEBAR_H = 60.0f;
-static constexpr float SS_PADDING    = 24.0f;
+static constexpr float SS_PADDING = 24.0f;
 
 // Dimensi kotak pencarian
 static constexpr float SS_SEARCH_X = SS_SIDEBAR_W + SS_PADDING;
@@ -25,15 +25,17 @@ static constexpr float SS_SEARCH_H = 56.0f;
 // Area hasil pencarian
 static constexpr float SS_RESULTS_X = SS_SIDEBAR_W + SS_PADDING;
 static constexpr float SS_RESULTS_Y = SS_SEARCH_Y + SS_SEARCH_H + 20.0f;
-static constexpr float SS_RESULTS_W = 1280.0f - SS_SIDEBAR_W - SS_PADDING * 2.0f;
+static constexpr float SS_RESULTS_W =
+    1280.0f - SS_SIDEBAR_W - SS_PADDING * 2.0f;
 static constexpr float SS_RESULTS_H = 720.0f - SS_RESULTS_Y - SS_PADDING;
 
 // Ukuran tiap baris hasil
-static constexpr float SS_ROW_H     = 76.0f;
-static constexpr float SS_COVER_SZ  = 56.0f;
-static constexpr float SS_ROW_GAP   = 4.0f;
+static constexpr float SS_ROW_H = 76.0f;
+static constexpr float SS_COVER_SZ = 56.0f;
+static constexpr float SS_ROW_GAP = 4.0f;
 
-// ── Helper ────────────────────────────────────────────────────────────────
+// Fungsi bantu mengubah string ke huruf kecil untuk pencocokan tanpa
+// memperhatikan kapitalisasi.
 static std::string toLower(const std::string &s) {
   std::string out = s;
   for (auto &c : out)
@@ -41,27 +43,22 @@ static std::string toLower(const std::string &s) {
   return out;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-
 void SearchScreen::Init() {
   AppCore::currentScreen = AppCore::Screen::Search;
 
   // Konfigurasi kotak teks
-  m_tbConfig.cornerRoundness     = 0.4f;
-  m_tbConfig.padding             = {16, 10};
-  m_tbConfig.backgroundColor     = {currentTheme.prim2.r,
-                                    currentTheme.prim2.g,
-                                    currentTheme.prim2.b, 230};
-  m_tbConfig.outlineColor        = {60, 65, 80, 255};
+  m_tbConfig.cornerRoundness = 0.4f;
+  m_tbConfig.padding = {16, 10};
+  m_tbConfig.backgroundColor = {currentTheme.prim2.r, currentTheme.prim2.g,
+                                currentTheme.prim2.b, 230};
+  m_tbConfig.outlineColor = {60, 65, 80, 255};
   m_tbConfig.focusedOutlineColor = currentTheme.second2;
-  m_tbConfig.textColor           = currentTheme.id == darkTheme.id
-                                       ? WHITE
-                                       : Color{20, 20, 30, 255};
-  m_tbConfig.cursorColor         = currentTheme.second2;
+  m_tbConfig.textColor =
+      currentTheme.id == darkTheme.id ? WHITE : Color{20, 20, 30, 255};
+  m_tbConfig.cursorColor = currentTheme.second2;
 
   m_searchBox = Fumbo::UI::Textbox(
-      {SS_SEARCH_X, SS_SEARCH_Y, SS_SEARCH_W - 70.0f, SS_SEARCH_H},
-      SpaceB, 26);
+      {SS_SEARCH_X, SS_SEARCH_Y, SS_SEARCH_W - 70.0f, SS_SEARCH_H}, SpaceB, 26);
   m_searchBox.SetStyle(m_tbConfig);
   m_searchBox.SetText("");
 
@@ -75,9 +72,7 @@ void SearchScreen::Init() {
   RebuildResults();
 }
 
-void SearchScreen::Cleanup() {
-  UnloadResultCovers();
-}
+void SearchScreen::Cleanup() { UnloadResultCovers(); }
 
 void SearchScreen::UnloadResultCovers() {
   for (auto &tex : m_resultCovers)
@@ -92,7 +87,7 @@ void SearchScreen::RebuildResults() {
   m_scrollY = 0.0f;
 
   const std::string query = toLower(m_searchBox.GetText());
-  const auto &playlists   = AppState::Instance().playlists;
+  const auto &playlists = AppState::Instance().playlists;
 
   for (int i = 0; i < (int)playlists.size(); ++i) {
     const auto &pl = playlists[i];
@@ -159,14 +154,14 @@ void SearchScreen::Update() {
   // Gulir daftar hasil
   m_scrollY -= GetMouseWheelMove() * 36.0f;
   float totalRowH = (float)m_filteredIndices.size() * (SS_ROW_H + SS_ROW_GAP);
-  float maxScroll  = std::max(0.0f, totalRowH - SS_RESULTS_H);
-  m_scrollY        = std::max(0.0f, std::min(m_scrollY, maxScroll));
+  float maxScroll = std::max(0.0f, totalRowH - SS_RESULTS_H);
+  m_scrollY = std::max(0.0f, std::min(m_scrollY, maxScroll));
 
   // Deteksi klik pada baris hasil
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
-    Vector2 mouse    = GetMousePosition();
-    Vector2 scale    = Fumbo::Utils::GetUIScale();
-    Vector2 mouseUI  = {mouse.x / scale.x, mouse.y / scale.y};
+    Vector2 mouse = GetMousePosition();
+    Vector2 scale = Fumbo::Utils::GetUIScale();
+    Vector2 mouseUI = {mouse.x / scale.x, mouse.y / scale.y};
 
     float y = SS_RESULTS_Y - m_scrollY;
     for (int ri = 0; ri < (int)m_filteredIndices.size(); ++ri) {
@@ -174,7 +169,8 @@ void SearchScreen::Update() {
       float rowBot = rowTop + SS_ROW_H;
 
       // Klip baris yang di luar area tampilan
-      if (rowBot < SS_RESULTS_Y || rowTop > SS_RESULTS_Y + SS_RESULTS_H) continue;
+      if (rowBot < SS_RESULTS_Y || rowTop > SS_RESULTS_Y + SS_RESULTS_H)
+        continue;
 
       Rectangle rowRec = {SS_RESULTS_X, rowTop, SS_RESULTS_W, SS_ROW_H};
       if (CheckCollisionPointRec(mouseUI, rowRec)) {
@@ -197,26 +193,25 @@ void SearchScreen::DrawDirty() {
   Fumbo::Graphic2D::DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(),
                                   currentTheme.prim1);
 
-  // ── Judul besar di latar belakang ────────────────────────────────────────
+  // Teks judul besar yang tampil samar di latar belakang sebagai dekorasi.
   Fumbo::Graphic2D::DrawText(Lang::Get("CARI", "SEARCH"), {380, 540}, SpaceB,
-                             256, {currentTheme.second1.r,
-                                   currentTheme.second1.g,
-                                   currentTheme.second1.b, 20});
+                             256,
+                             {currentTheme.second1.r, currentTheme.second1.g,
+                              currentTheme.second1.b, 20});
 
-  // ── Label "Cari Playlist" ────────────────────────────────────────────────
-  Fumbo::Graphic2D::DrawText(
-      Lang::Get("Cari Playlist", "Search Playlists"),
-      {SS_SEARCH_X, SS_TITLEBAR_H + 6.0f}, SpaceB, 16,
-      {currentTheme.second1.r, currentTheme.second1.g,
-       currentTheme.second1.b, 160});
+  // Label kecil di atas kotak pencarian.
+  Fumbo::Graphic2D::DrawText(Lang::Get("Cari Playlist", "Search Playlists"),
+                             {SS_SEARCH_X, SS_TITLEBAR_H + 6.0f}, SpaceB, 16,
+                             {currentTheme.second1.r, currentTheme.second1.g,
+                              currentTheme.second1.b, 160});
 
-  // ── Kotak pencarian ──────────────────────────────────────────────────────
+  // Gambar kotak pencarian beserta bayangan di belakangnya.
   // Bayangan halus di belakang kotak
   Fumbo::Graphic2D::DrawRectangleRounded(
       {SS_SEARCH_X - 2, SS_SEARCH_Y - 2, SS_SEARCH_W - 66.0f, SS_SEARCH_H + 4},
       0.4f, 8,
-      {currentTheme.second2.r, currentTheme.second2.g,
-       currentTheme.second2.b, 30});
+      {currentTheme.second2.r, currentTheme.second2.g, currentTheme.second2.b,
+       30});
 
   m_searchBox.Draw();
   m_clearBtn.Draw();
@@ -226,11 +221,11 @@ void SearchScreen::DrawDirty() {
     Fumbo::Graphic2D::DrawText(
         Lang::Get("Ketik nama playlist...", "Type a playlist name..."),
         {SS_SEARCH_X + 18.0f, SS_SEARCH_Y + 16.0f}, SpaceB, 22,
-        {currentTheme.second1.r, currentTheme.second1.g,
-         currentTheme.second1.b, 55});
+        {currentTheme.second1.r, currentTheme.second1.g, currentTheme.second1.b,
+         55});
   }
 
-  // ── Jumlah hasil ─────────────────────────────────────────────────────────
+  // Teks kecil yang menampilkan jumlah playlist yang ditemukan.
   std::string countStr;
   if (m_filteredIndices.empty()) {
     countStr = Lang::Get("Tidak ada hasil", "No results found");
@@ -238,12 +233,10 @@ void SearchScreen::DrawDirty() {
     countStr = std::to_string(m_filteredIndices.size()) + " " +
                Lang::Get("playlist ditemukan", "playlists found");
   }
-  Fumbo::Graphic2D::DrawText(countStr,
-                             {SS_RESULTS_X, SS_RESULTS_Y - 18.0f}, SpaceB, 14,
-                             {130, 135, 155, 200});
+  Fumbo::Graphic2D::DrawText(countStr, {SS_RESULTS_X, SS_RESULTS_Y - 18.0f},
+                             SpaceB, 14, {130, 135, 155, 200});
 
-  // ── Gambar klip untuk area hasil ─────────────────────────────────────────
-  // (Raylib tidak memiliki scissor per area di sini; kita skip baris di luar)
+  // Render setiap baris hasil, lewati baris yang berada di luar area tampil.
 
   float y = SS_RESULTS_Y - m_scrollY;
 
@@ -255,19 +248,19 @@ void SearchScreen::DrawDirty() {
     if (rowBot < SS_RESULTS_Y || rowTop > SS_RESULTS_Y + SS_RESULTS_H)
       continue;
 
-    int plIdx      = m_filteredIndices[ri];
+    int plIdx = m_filteredIndices[ri];
     const auto &pl = AppState::Instance().playlists[plIdx];
 
-    // ── Latar belakang baris ─────────────────────────────────────────────
+    // Gambar latar belakang baris dengan warna bergantian dan efek hover.
     bool isHovered = false;
     {
-      Vector2 mouse   = GetMousePosition();
-      Vector2 scale   = Fumbo::Utils::GetUIScale();
+      Vector2 mouse = GetMousePosition();
+      Vector2 scale = Fumbo::Utils::GetUIScale();
       Vector2 mouseUI = {mouse.x / scale.x, mouse.y / scale.y};
       Rectangle rowRec = {SS_RESULTS_X, rowTop, SS_RESULTS_W, SS_ROW_H};
-      isHovered = CheckCollisionPointRec(mouseUI, rowRec)
-                  && rowTop >= SS_RESULTS_Y
-                  && rowBot <= SS_RESULTS_Y + SS_RESULTS_H;
+      isHovered = CheckCollisionPointRec(mouseUI, rowRec) &&
+                  rowTop >= SS_RESULTS_Y &&
+                  rowBot <= SS_RESULTS_Y + SS_RESULTS_H;
     }
 
     Color rowBg;
@@ -275,13 +268,11 @@ void SearchScreen::DrawDirty() {
       rowBg = {currentTheme.second2.r, currentTheme.second2.g,
                currentTheme.second2.b, 40};
     } else if (ri % 2 == 0) {
-      rowBg = currentTheme.id == darkTheme.id
-                  ? Color{30, 33, 42, 200}
-                  : Color{235, 238, 242, 200};
+      rowBg = currentTheme.id == darkTheme.id ? Color{30, 33, 42, 200}
+                                              : Color{235, 238, 242, 200};
     } else {
-      rowBg = currentTheme.id == darkTheme.id
-                  ? Color{25, 28, 37, 200}
-                  : Color{242, 245, 248, 200};
+      rowBg = currentTheme.id == darkTheme.id ? Color{25, 28, 37, 200}
+                                              : Color{242, 245, 248, 200};
     }
     Fumbo::Graphic2D::DrawRectangleRounded(
         {SS_RESULTS_X, rowTop, SS_RESULTS_W, SS_ROW_H}, 0.18f, 8, rowBg);
@@ -295,52 +286,47 @@ void SearchScreen::DrawDirty() {
            currentTheme.second2.b, (unsigned char)(isActive ? 255 : 180)});
     }
 
-    // ── Thumbnail sampul ─────────────────────────────────────────────────
+    // Gambar thumbnail sampul di sisi kiri baris.
     float coverX = SS_RESULTS_X + 12.0f;
     float coverY = rowTop + (SS_ROW_H - SS_COVER_SZ) / 2.0f;
     if (ri < (int)m_resultCovers.size() && m_resultCovers[ri].id != 0) {
       const Texture2D &tex = m_resultCovers[ri];
       // Gambar dengan mempertahankan rasio aspek
       float scale = SS_COVER_SZ / (float)std::max(tex.width, tex.height);
-      float dw = tex.width  * scale;
+      float dw = tex.width * scale;
       float dh = tex.height * scale;
-      DrawTexturePro(
-          tex,
-          {0, 0, (float)tex.width, (float)tex.height},
-          {coverX + (SS_COVER_SZ - dw) / 2.0f,
-           coverY + (SS_COVER_SZ - dh) / 2.0f, dw, dh},
-          {0, 0}, 0.0f, WHITE);
+      DrawTexturePro(tex, {0, 0, (float)tex.width, (float)tex.height},
+                     {coverX + (SS_COVER_SZ - dw) / 2.0f,
+                      coverY + (SS_COVER_SZ - dh) / 2.0f, dw, dh},
+                     {0, 0}, 0.0f, WHITE);
     }
 
-    // ── Nama playlist ─────────────────────────────────────────────────────
+    // Gambar nama playlist dan batas panjang teks agar tidak melebihi lebar
+    // baris.
     float textX = coverX + SS_COVER_SZ + 16.0f;
     std::string dispName = pl.name;
     if (dispName.size() > 45)
       dispName = dispName.substr(0, 42) + "...";
     Fumbo::Graphic2D::DrawText(dispName, {textX, rowTop + 14.0f}, SpaceB, 22,
-                               isHovered
-                                   ? WHITE
-                                   : currentTheme.second1);
+                               isHovered ? WHITE : currentTheme.second1);
 
-    // ── Jumlah lagu ───────────────────────────────────────────────────────
+    // Gambar jumlah lagu di bawah nama playlist.
     std::string trackCount =
-        std::to_string(pl.tracks.size()) + " " +
-        Lang::Get("lagu", "tracks");
+        std::to_string(pl.tracks.size()) + " " + Lang::Get("lagu", "tracks");
     Fumbo::Graphic2D::DrawText(trackCount, {textX, rowTop + 44.0f}, SpaceB, 15,
                                {130, 135, 155, 200});
 
-    // ── Indikator "sedang diputar" ────────────────────────────────────────
+    // Tampilkan indikator teks kecil jika playlist ini sedang diputar.
     if (isActive) {
       Fumbo::Graphic2D::DrawText(
           Lang::Get("▶ Diputar", "▶ Playing"),
-          {SS_RESULTS_X + SS_RESULTS_W - 130.0f, rowTop + 26.0f},
-          SpaceB, 15,
+          {SS_RESULTS_X + SS_RESULTS_W - 130.0f, rowTop + 26.0f}, SpaceB, 15,
           {currentTheme.second2.r, currentTheme.second2.g,
            currentTheme.second2.b, 230});
     }
   }
 
-  // ── Pesan jika tidak ada hasil ────────────────────────────────────────────
+  // Tampilkan pesan jika pencarian tidak menghasilkan kecocokan apapun.
   if (m_filteredIndices.empty() && !m_searchBox.GetText().empty()) {
     Fumbo::Graphic2D::DrawText(
         Lang::Get("Tidak ada playlist yang cocok", "No matching playlists"),
@@ -354,7 +340,7 @@ void SearchScreen::DrawDirty() {
     Fumbo::Graphic2D::DrawText(
         Lang::Get("Belum ada playlist. Buat satu di menu Home.",
                   "No playlists yet. Create one from the Home screen."),
-        {SS_RESULTS_X + 10.0f, SS_RESULTS_Y + 20.0f},
-        SpaceB, 18, {100, 105, 120, 200});
+        {SS_RESULTS_X + 10.0f, SS_RESULTS_Y + 20.0f}, SpaceB, 18,
+        {100, 105, 120, 200});
   }
 }

@@ -118,7 +118,7 @@ static bool parseJsonBool(const std::string &json, size_t &pos) {
   return v;
 }
 
-// ── Path helpers ───────────────────────────────────────────────────
+// Path helpers untuk lokasi file data pengguna.
 // Kembalikan path folder user/ (membuat jika belum ada).
 std::string AppState::UserDir() {
   std::string base = Fumbo::Engine::Instance().GetAppDir();
@@ -130,7 +130,7 @@ std::string AppState::UserDir() {
   try {
     fs::create_directories(ud);
   } catch (...) {
-    // Gagal membuat folder — save/load akan gagal secara halus
+    // Gagal membuat folder, save dan load akan gagal secara halus.
   }
   return ud + '/';
 }
@@ -143,9 +143,9 @@ std::string AppState::PreferencesFilePath() {
   return UserDir() + "preferences.json";
 }
 
-// ── Simpan ke dua file terpisah ──────────────────────────────────────────
+// Simpan preferensi ke user/preferences.json dan data playlist ke user/playlists.json.
 void AppState::SaveToFile() const {
-  // 1. user/preferences.json — pengaturan pengguna
+  // Tulis pengaturan pengguna ke file preferensi.
   {
     std::ofstream pf(PreferencesFilePath());
     if (pf) {
@@ -157,7 +157,7 @@ void AppState::SaveToFile() const {
     }
   }
 
-  // 2. user/playlists.json — data playlist
+  // Tulis data playlist ke file playlist.
   {
     std::ofstream f(PlaylistsFilePath());
     if (!f)
@@ -200,10 +200,9 @@ void AppState::SaveToFile() const {
   }
 }
 
-// ── Muat dari dua file terpisah ─────────────────────────────────────────
+// Muat preferensi dari user/preferences.json lalu data playlist dari user/playlists.json.
 void AppState::LoadFromFile() {
-  // 1. Muat user/preferences.json
-  //    Jika tidak ada, nilai default dari deklarasi struct tetap digunakan.
+  // Baca file preferensi pengguna. Jika tidak ada, nilai default dari deklarasi struct tetap digunakan.
   {
     std::ifstream pf(PreferencesFilePath());
     if (pf) {
@@ -235,7 +234,7 @@ void AppState::LoadFromFile() {
     }
   }
 
-  // 2. Muat user/playlists.json
+  // Baca file playlist, bersihkan data lama sebelum memuat.
   playlists.clear();
   nextPlaylistId = 1;
 

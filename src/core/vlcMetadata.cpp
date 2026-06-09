@@ -86,19 +86,15 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath) {
 
   t.album = getMeta(libvlc_meta_Album);
 
-  // URL sampul seni: VLC mengembalikan URI file:// yang menunjuk ke cache
-  // thumbnail-nya
+  // URL sampul seni: VLC mengembalikan URI file:// yang menunjuk ke cache thumbnail.
+  // Pada Windows, formatnya adalah file:///C:/... sehingga awalan file:/// perlu dihapus untuk mendapat jalur drive.
+  // Pada Linux, formatnya adalah file:///home/... sehingga cukup menghapus awalan file:// untuk mendapat jalur absolut.
   std::string artUrl = getMeta(libvlc_meta_ArtworkURL);
   if (!artUrl.empty()) {
-    // Hapus awalan "file://" untuk mendapatkan path absolut sistem file
-    // Windows: "file:///C:/..." → strip "file:///" → "C:/..."
-    // Linux:   "file:///home/..." → strip "file://" → "/home/..."
     if (artUrl.substr(0, 8) == "file:///") {
 #ifdef _WIN32
-      // Pada Windows awalan 3-slash → tinggalkan huruf drive
       t.coverArtPath = artUrl.substr(8);
 #else
-      // Pada Linux awalan 3-slash → path absolut dimulai dari '/'
       t.coverArtPath = artUrl.substr(7);
 #endif
     } else if (artUrl.substr(0, 7) == "file://") {
