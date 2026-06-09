@@ -350,6 +350,8 @@ void AppState::LoadFromFile() {
 }
 
 void AppState::PlayPlaylist(const Playlist &pl) {
+  Fumbo::Log::Infof("[AppState] PlayPlaylist id=%d name='%s' tracks=%zu",
+                    pl.id, pl.name.c_str(), pl.tracks.size());
   activePlaylistId = pl.id;
   queue.clear();
   for (const auto &t : pl.tracks)
@@ -377,16 +379,21 @@ void AppState::PrevTrack() {
 void AppState::UpdateMusicPlayback() {
   auto &audio = Fumbo::Engine::Instance().GetAudioManager();
 
-  // Memproses transisi fade out jika ada perpindahan lagu atau playlist
   if (m_isFadingOutTransition) {
     if (!audio.IsMusicPlaying(0)) {
+      Fumbo::Log::Info("[AppState] Fade-out complete, loading next track");
       audio.UnloadAudio("global_track");
       isAudioLoaded = false;
       m_isFadingOutTransition = false;
 
-      // Mainkan lagu berikutnya yang disimpan
       std::string trackId = "global_track";
-      audio.LoadAudio(trackId, m_nextTrackToPlay.filePath, Fumbo::Audio::AudioType::MUSIC);
+      bool ok = audio.LoadAudio(trackId, m_nextTrackToPlay.filePath, Fumbo::Audio::AudioType::MUSIC);
+      if (!ok) {
+        Fumbo::Log::Errorf("[AppState] UpdateMusicPlayback: LoadAudio failed for '%s'",
+                           m_nextTrackToPlay.filePath.c_str());
+        isPlaying = false;
+        return;
+      }
       loadedTrackPath = m_nextTrackToPlay.filePath;
       isAudioLoaded = true;
       audio.PlayMusic(trackId, 0, false);
@@ -399,6 +406,7 @@ void AppState::UpdateMusicPlayback() {
     float len = audio.GetMusicLength(0);
     float pos = audio.GetMusicPlayed(0);
     if (len > 0.0f && pos >= len - 0.1f) {
+      Fumbo::Log::Info("[AppState] Track ended, advancing to next");
       NextTrack();
     }
   }
@@ -407,9 +415,13 @@ void AppState::UpdateMusicPlayback() {
 void AppState::PlayCurrentTrack() {
   const Track *t = CurrentTrack();
   if (!t) {
+    Fumbo::Log::Warn("[AppState] PlayCurrentTrack: no current track, stopping");
     StopMusic();
     return;
   }
+
+  Fumbo::Log::Infof("[AppState] PlayCurrentTrack: queue[%d] filePath='%s'",
+                    currentQueueIndex, t->filePath.c_str());
 
   auto &audio = Fumbo::Engine::Instance().GetAudioManager();
   std::string trackId = "global_track";
@@ -418,13 +430,14 @@ void AppState::PlayCurrentTrack() {
   if (isAudioLoaded && loadedTrackPath != t->filePath) {
     // Jika musik sedang diputar lakukan fade out transisi
     if (isPlaying) {
+      Fumbo::Log::Info("[AppState] Track changed while playing — starting fade-out transition");
       m_nextTrackToPlay = *t;
       m_isFadingOutTransition = true;
       audio.StopMusicFade(0, 0.5f);
-      loadedTrackPath = ""; // Mengosongkan path agar tidak dianggap terhambat
+      loadedTrackPath = "";
       return;
     } else {
-      // Jika dijeda langsung stop dan bebaskan
+      Fumbo::Log::Info("[AppState] Track changed while paused — unloading old track");
       audio.StopMusic(0);
       audio.UnloadAudio(trackId);
       isAudioLoaded = false;
@@ -432,13 +445,20 @@ void AppState::PlayCurrentTrack() {
   }
 
   if (!isAudioLoaded) {
-    audio.LoadAudio(trackId, t->filePath, Fumbo::Audio::AudioType::MUSIC);
+    bool ok = audio.LoadAudio(trackId, t->filePath, Fumbo::Audio::AudioType::MUSIC);
+    if (!ok) {
+      Fumbo::Log::Errorf("[AppState] PlayCurrentTrack: LoadAudio failed for '%s'",
+                         t->filePath.c_str());
+      isPlaying = false;
+      return;
+    }
     loadedTrackPath = t->filePath;
     isAudioLoaded = true;
   }
 
   audio.PlayMusic(trackId, 0, false);
   isPlaying = true;
+  Fumbo::Log::Info("[AppState] PlayCurrentTrack: playback started");
 }
 
 void AppState::StopMusic() {

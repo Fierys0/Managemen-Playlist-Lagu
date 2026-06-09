@@ -14,9 +14,12 @@ void VlcMeta::Init() {
   if (s_vlc)
     return;
   // Sembunyikan output VLC
-  // --quiet menekan log, --no-video tidak dibutuhkan untuk metadata saja
   const char *args[] = {"--quiet"};
   s_vlc = libvlc_new(1, args);
+  if (s_vlc)
+    Fumbo::Log::Info("[VLC] libvlc initialised successfully");
+  else
+    Fumbo::Log::Error("[VLC] libvlc_new() returned null — VLC not available");
 }
 
 void VlcMeta::Shutdown() {
@@ -42,20 +45,31 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath) {
   t.filePath = filePath;
   t.title = stemFromPath(filePath); // judul cadangan jika metadata tidak ada
 
-  if (!s_vlc)
-    return t;
+  Fumbo::Log::Infof("[VLC] GetTrackInfo: '%s'", filePath.c_str());
 
-  libvlc_media_t *m = libvlc_media_new_path(s_vlc, filePath.c_str());
-  if (!m)
+  if (!s_vlc) {
+    Fumbo::Log::Warn("[VLC] s_vlc is null, returning stub track");
     return t;
+  }
 
-  // Urai secara sinkron: metadata lokal + ambil sampul seni lokal
+  // On Windows, libvlc_media_new_path expects forward-slash paths
+  std::string normalizedPath = filePath;
+  for (char &c : normalizedPath)
+    if (c == '\\')
+      c = '/';
+
+  libvlc_media_t *m = libvlc_media_new_path(s_vlc, normalizedPath.c_str());
+  if (!m) {
+    Fumbo::Log::Errorf("[VLC] libvlc_media_new_path failed for: '%s'", normalizedPath.c_str());
+    return t;
+  }
+
+  // Urai secara sinkron
   libvlc_media_parse_with_options(
       m,
       (libvlc_media_parse_flag_t)(libvlc_media_parse_local |
                                   libvlc_media_fetch_local),
-      5000 // batas waktu dalam milidetik
-  );
+      5000);
 
   // Tunggu hingga parsing selesai (maks 5 detik)
   using namespace std::chrono;
@@ -65,12 +79,15 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath) {
     if (st == libvlc_media_parsed_status_done ||
         st == libvlc_media_parsed_status_failed ||
         st == libvlc_media_parsed_status_timeout) {
+      if (st == libvlc_media_parsed_status_failed)
+        Fumbo::Log::Warnf("[VLC] Parse failed for: '%s'", normalizedPath.c_str());
+      else if (st == libvlc_media_parsed_status_timeout)
+        Fumbo::Log::Warnf("[VLC] Parse timed out for: '%s'", normalizedPath.c_str());
       break;
     }
     std::this_thread::sleep_for(milliseconds(50));
   }
 
-  // Fungsi bantu untuk mengambil satu metadata
   auto getMeta = [&](libvlc_meta_t key) -> std::string {
     const char *v = libvlc_media_get_meta(m, key);
     return v ? std::string(v) : std::string{};
@@ -86,9 +103,6 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath) {
 
   t.album = getMeta(libvlc_meta_Album);
 
-  // URL sampul seni: VLC mengembalikan URI file:// yang menunjuk ke cache thumbnail.
-  // Pada Windows, formatnya adalah file:///C:/... sehingga awalan file:/// perlu dihapus untuk mendapat jalur drive.
-  // Pada Linux, formatnya adalah file:///home/... sehingga cukup menghapus awalan file:// untuk mendapat jalur absolut.
   std::string artUrl = getMeta(libvlc_meta_ArtworkURL);
   if (!artUrl.empty()) {
     if (artUrl.substr(0, 8) == "file:///") {
@@ -105,6 +119,10 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath) {
   }
 
   t.durationMs = libvlc_media_get_duration(m);
+
+  Fumbo::Log::Infof("[VLC] Track parsed — title='%s' artist='%s' durationMs=%lld coverArt='%s'",
+                    t.title.c_str(), t.artist.c_str(),
+                    (long long)t.durationMs, t.coverArtPath.c_str());
 
   libvlc_media_release(m);
   return t;
