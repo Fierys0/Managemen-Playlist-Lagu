@@ -54,6 +54,9 @@ target_include_directories(asset_pack PRIVATE
     engine/lib/raylib/src
     src
 )
+if(WIN32)
+  target_link_options(asset_pack PRIVATE -static)
+endif()
 set_target_properties(asset_pack PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tools
 )
@@ -115,10 +118,8 @@ target_compile_options(${PROJECT_NAME}
 )
 
 if(WIN32)
-  target_link_libraries(${PROJECT_NAME}
-        PRIVATE winmm
-    )
-
+  # winmm is linked transitively by raylib if needed
+  
   # Salin DLL VLC ke direktori output setelah build selesai.
   # File DLL tidak tersedia di dalam SDK, salin dari instalasi VLC ke src/lib/windows/vlc.
   set(VLC_DLL_DIR "${CMAKE_SOURCE_DIR}/src/lib/windows/vlc")
@@ -137,4 +138,20 @@ if(WIN32)
         "src/lib/windows/vlc/ for the app to run on Windows.")
     endif()
   endforeach()
+
+  # Salin DLL standar MinGW jika melakukan cross-compiling
+  if(CMAKE_CROSSCOMPILING AND DEFINED MINGW_PREFIX)
+    set(MINGW_BIN_DIR "/usr/${MINGW_PREFIX}/bin")
+    foreach(_dll libgcc_s_seh-1.dll libstdc++-6.dll libwinpthread-1.dll)
+      if(EXISTS "${MINGW_BIN_DIR}/${_dll}")
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+          COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${MINGW_BIN_DIR}/${_dll}"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/${_dll}"
+          COMMENT "Copying MinGW DLL ${_dll} to output directory"
+        )
+      endif()
+    endforeach()
+  endif()
 endif()
+
