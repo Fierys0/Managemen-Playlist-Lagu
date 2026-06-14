@@ -4,6 +4,7 @@
 #include "../core/globals.hpp"
 #include "../core/vlcMetadata.hpp"
 #include "addPlaylist.hpp"
+// #include "../core/playlistData.hpp"
 #include "fumbo.hpp"
 #include "playMusic.hpp"
 #include <memory>
@@ -17,7 +18,8 @@ static constexpr float CARD_W = 210.0f;
 static constexpr float CARD_H = 270.0f;
 static constexpr float CARD_GAP = 20.0f;
 
-void MainMenu::Init() {
+void MainMenu::Init()
+{
   m_plusBtn = Fumbo::UI::Button({1200, 650, 56, 56});
   m_plusBtn.ApplyStyle(btnstyle);
   m_plusBtn.Roundness(0.5f);
@@ -33,33 +35,59 @@ void MainMenu::Init() {
   m_rightBtn.ApplyStyle(btnstyle);
   m_rightBtn.Roundness(0.2f);
   m_rightBtn.AddText(">", SpaceB, 28, WHITE);
+  // 900 mentok kanan
+  m_sortDateBtn = Fumbo::UI::Button({CONTENT_X + 70.0f + 590.0f, CONTENT_Y + 15.0F, 150, 30});
+  m_sortDateBtn.ApplyStyle(btnstyle);
+  m_sortDateBtn.Roundness(0.2f);
+  m_sortDateBtn.AddText(Lang::Get("Urutkan Dari Tgl", "Sort By Date"), SpaceB, 20, currentTheme.second1);
+
+  m_sortNameBtn = Fumbo::UI::Button({CONTENT_X + 70.0f + 750.0f, CONTENT_Y + 15.0F, 150, 30});
+  m_sortNameBtn.ApplyStyle(btnstyle);
+  m_sortNameBtn.Roundness(0.2f);
+  m_sortNameBtn.AddText(Lang::Get("Urutkan Dari Nama", "Sort By Name"), SpaceB, 18, currentTheme.second1);
 
   RebuildCards();
   AppCore::currentScreen = AppCore::Screen::Home;
 }
 
-void MainMenu::Cleanup() {
+void MainMenu::Cleanup()
+{
   for (auto &e : m_cards)
     if (e.coverTex.id != 0)
       UnloadTexture(e.coverTex);
   m_cards.clear();
 }
 
-void MainMenu::RebuildCards() {
+void MainMenu::RebuildCards()
+{
   // Hapus tekstur lama sebelum membangun ulang
   for (auto &e : m_cards)
     if (e.coverTex.id != 0)
       UnloadTexture(e.coverTex);
   m_cards.clear();
 
-  auto &playlists = AppState::Instance().playlists;
+  auto playlists = AppState::Instance().playlists;
+
+  // sorting
+  if (m_sortMode == SortMode::ByDate)
+  {
+    sort(playlists.begin(), playlists.end(), [](const Playlist &a, const Playlist &b)
+         { return a.id < b.id; });
+  }
+  else
+  {
+    sort(playlists.begin(), playlists.end(), [](const Playlist &a, const Playlist &b)
+         { return a.name < b.name; });
+  }
+
   m_lastPlaylistCount = (int)playlists.size();
 
   float startX = CONTENT_X + 70.0f;
   float startY =
       CONTENT_Y + 50.0f; // Shifted down to make room for header title
 
-  for (size_t i = 0; i < playlists.size(); ++i) {
+  for (size_t i = 0; i < playlists.size(); ++i)
+  {
     const auto &pl = playlists[i];
     int localIndex = i % 8;
     int row = localIndex / 4;
@@ -72,26 +100,34 @@ void MainMenu::RebuildCards() {
     // dari lagu pertama yang punya cover atau gambar placeholder
     Texture2D tex{};
     bool loaded = false;
-    if (!pl.coverPath.empty()) {
+    if (!pl.coverPath.empty())
+    {
       FILE *f = fopen(pl.coverPath.c_str(), "rb");
-      if (f) {
+      if (f)
+      {
         fclose(f);
         Image img = LoadImage(pl.coverPath.c_str());
-        if (img.data) {
+        if (img.data)
+        {
           tex = LoadTextureFromImage(img);
           UnloadImage(img);
           loaded = true;
         }
       }
     }
-    if (!loaded) {
-      for (const auto &t : pl.tracks) {
-        if (!t.coverArtPath.empty()) {
+    if (!loaded)
+    {
+      for (const auto &t : pl.tracks)
+      {
+        if (!t.coverArtPath.empty())
+        {
           FILE *f = fopen(t.coverArtPath.c_str(), "rb");
-          if (f) {
+          if (f)
+          {
             fclose(f);
             Image img = LoadImage(t.coverArtPath.c_str());
-            if (img.data) {
+            if (img.data)
+            {
               tex = LoadTextureFromImage(img);
               UnloadImage(img);
               loaded = true;
@@ -113,28 +149,46 @@ void MainMenu::RebuildCards() {
   }
 }
 
-void MainMenu::Update() {
+void MainMenu::Update()
+{
   // Bangun ulang kartu jika jumlah playlist berubah
-  if ((int)AppState::Instance().playlists.size() != m_lastPlaylistCount) {
+  if ((int)AppState::Instance().playlists.size() != m_lastPlaylistCount)
+  {
     RebuildCards();
     int totalPlaylists = (int)AppState::Instance().playlists.size();
     int maxPages = (totalPlaylists + 7) / 8;
-    if (m_currentPage >= maxPages) {
+    if (m_currentPage >= maxPages)
+    {
       m_currentPage = (maxPages > 0) ? (maxPages - 1) : 0;
       RebuildCards();
     }
   }
 
+  // sorting ulang
+  if (m_sortMode != SortMode::ByDate && m_sortDateBtn.IsPressed())
+  {
+    m_sortMode = SortMode::ByDate;
+    RebuildCards();
+  }
+  else if (m_sortMode != SortMode::ByName && m_sortNameBtn.IsPressed())
+  {
+    m_sortMode = SortMode::ByName;
+    RebuildCards();
+  }
+
   // Animasi transisi halaman
-  if (m_transitionProgress < 1.0f) {
+  if (m_transitionProgress < 1.0f)
+  {
     m_transitionProgress += GetFrameTime() * 2.5f;
-    if (m_transitionProgress > 1.0f) {
+    if (m_transitionProgress > 1.0f)
+    {
       m_transitionProgress = 1.0f;
     }
   }
 
   // Tombol tambah playlist baru
-  if (m_plusBtn.IsPressed()) {
+  if (m_plusBtn.IsPressed())
+  {
     AppCore::currentScreen = AppCore::Screen::Home;
     Fumbo::Instance().ChangeState(std::make_shared<AddPlaylist>());
   }
@@ -142,14 +196,17 @@ void MainMenu::Update() {
   int totalPlaylists = (int)AppState::Instance().playlists.size();
 
   // Navigasi halaman dengan tombol Left/Right
-  if (m_transitionProgress >= 1.0f) {
-    if (m_currentPage > 0 && m_leftBtn.IsPressed()) {
+  if (m_transitionProgress >= 1.0f)
+  {
+    if (m_currentPage > 0 && m_leftBtn.IsPressed())
+    {
       m_prevPage = m_currentPage;
       m_currentPage--;
       m_transitionProgress = 0.0f;
       m_transitionDirection = -1;
     }
-    if ((m_currentPage + 1) * 8 < totalPlaylists && m_rightBtn.IsPressed()) {
+    if ((m_currentPage + 1) * 8 < totalPlaylists && m_rightBtn.IsPressed())
+    {
       m_prevPage = m_currentPage;
       m_currentPage++;
       m_transitionProgress = 0.0f;
@@ -158,11 +215,15 @@ void MainMenu::Update() {
   }
 
   // cek klik pada setiap kartu playlist (jika tidak sedang transisi)
-  if (m_transitionProgress >= 1.0f) {
-    for (auto &entry : m_cards) {
+  if (m_transitionProgress >= 1.0f)
+  {
+    for (auto &entry : m_cards)
+    {
       int cardIndex = -1;
-      for (size_t i = 0; i < m_cards.size(); ++i) {
-        if (m_cards[i].playlistId == entry.playlistId) {
+      for (size_t i = 0; i < m_cards.size(); ++i)
+      {
+        if (m_cards[i].playlistId == entry.playlistId)
+        {
           cardIndex = (int)i;
           break;
         }
@@ -171,17 +232,22 @@ void MainMenu::Update() {
         continue;
 
       entry.card.Update();
-      if (entry.card.IsEditClicked()) {
+      if (entry.card.IsEditClicked())
+      {
         AppCore::currentScreen = AppCore::Screen::Home;
         Fumbo::Instance().ChangeState(
             std::make_shared<AddPlaylist>(entry.playlistId));
         return;
       }
-      if (entry.card.IsClicked()) {
-        for (const auto &pl : AppState::Instance().playlists) {
-          if (pl.id == entry.playlistId) {
+      if (entry.card.IsClicked())
+      {
+        for (const auto &pl : AppState::Instance().playlists)
+        {
+          if (pl.id == entry.playlistId)
+          {
             // Jika playlist yang ditekan berbeda dengan playlist aktif saat ini
-            if (AppState::Instance().activePlaylistId != pl.id) {
+            if (AppState::Instance().activePlaylistId != pl.id)
+            {
               AppState::Instance().PlayPlaylist(pl);
             }
             AppCore::currentScreen = AppCore::Screen::Play;
@@ -196,7 +262,8 @@ void MainMenu::Update() {
 
 void MainMenu::DrawClean() {}
 
-void MainMenu::DrawDirty() {
+void MainMenu::DrawDirty()
+{
   // Latar belakang
   Fumbo::Graphic2D::DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(),
                                   currentTheme.prim1);
@@ -209,12 +276,23 @@ void MainMenu::DrawDirty() {
   // Tombol buat playlist baru
   m_plusBtn.Draw();
 
+  // Tombol sort
+  if (!m_cards.empty())
+  {
+    m_sortDateBtn.IdleColor(m_sortMode == SortMode::ByDate ? WHITE : GRAY);
+    m_sortNameBtn.IdleColor(m_sortMode == SortMode::ByName ? WHITE : GRAY);
+    m_sortDateBtn.Draw();
+    m_sortNameBtn.Draw();
+  }
+
   // Tombol navigasi Left/Right
   int totalPlaylists = (int)AppState::Instance().playlists.size();
-  if (m_currentPage > 0) {
+  if (m_currentPage > 0)
+  {
     m_leftBtn.Draw();
   }
-  if ((m_currentPage + 1) * 8 < totalPlaylists) {
+  if ((m_currentPage + 1) * 8 < totalPlaylists)
+  {
     m_rightBtn.Draw();
   }
 
@@ -222,22 +300,28 @@ void MainMenu::DrawDirty() {
   float t = m_transitionProgress;
   float ease = t * t * (3.0f - 2.0f * t);
 
-  for (size_t i = 0; i < m_cards.size(); ++i) {
+  for (size_t i = 0; i < m_cards.size(); ++i)
+  {
     int p = (int)i / 8;
-    if (p == m_currentPage) {
+    if (p == m_currentPage)
+    {
       float offsetX = 0.0f;
-      if (m_transitionProgress < 1.0f) {
+      if (m_transitionProgress < 1.0f)
+      {
         offsetX = -m_transitionDirection * 1080.0f * (1.0f - ease);
       }
       m_cards[i].card.Draw(offsetX);
-    } else if (p == m_prevPage && m_transitionProgress < 1.0f) {
+    }
+    else if (p == m_prevPage && m_transitionProgress < 1.0f)
+    {
       float offsetX = -m_transitionDirection * 1080.0f * ease;
       m_cards[i].card.Draw(offsetX);
     }
   }
 
   // Pesan jika belum ada playlist
-  if (m_cards.empty()) {
+  if (m_cards.empty())
+  {
     Fumbo::Graphic2D::DrawText(
         Lang::Get("Belum ada playlist, tekan  +  untuk membuat",
                   "No playlists yet, press  +  to create one"),
