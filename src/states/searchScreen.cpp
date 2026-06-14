@@ -1,6 +1,7 @@
 #include "searchScreen.hpp"
 #include "../core/appState.hpp"
 #include "../core/core.hpp"
+#include "../core/coverCache.hpp"
 #include "../core/globals.hpp"
 #include "fumbo.hpp"
 #include "mainMenu.hpp"
@@ -72,17 +73,16 @@ void SearchScreen::Init() {
   RebuildResults();
 }
 
-void SearchScreen::Cleanup() { UnloadResultCovers(); }
-
-void SearchScreen::UnloadResultCovers() {
-  for (auto &tex : m_resultCovers)
-    if (tex.id != 0)
-      UnloadTexture(tex);
+void SearchScreen::Cleanup() {
+  // [HASH MAP] Tidak perlu UnloadTexture satu per satu karena
+  // masa hidup tekstur dikelola oleh CoverCache (hash map).
+  // Cukup bersihkan vektor referensi lokal.
   m_resultCovers.clear();
 }
 
 void SearchScreen::RebuildResults() {
-  UnloadResultCovers();
+  // [HASH MAP] Bersihkan referensi lokal tanpa menghapus tekstur dari cache
+  m_resultCovers.clear();
   m_filteredIndices.clear();
   m_scrollY = 0.0f;
 
@@ -95,40 +95,38 @@ void SearchScreen::RebuildResults() {
     if (query.empty() || toLower(pl.name).find(query) != std::string::npos) {
       m_filteredIndices.push_back(i);
 
-      // Muat tekstur sampul untuk baris ini
+      // [HASH MAP] Ambil tekstur sampul dari CoverCache (hash map)
+      // Alih-alih memuat file gambar dari disk setiap kali,
+      // CoverCache.Get() akan mengembalikan tekstur dari hash map jika
+      // sudah pernah dimuat sebelumnya (cache hit, O(1)).
+      // Jika belum ada (cache miss), baru dimuat dari disk dan disimpan.
       Texture2D tex{};
       bool loaded = false;
+
+      // Coba dari coverPath playlist
       if (!pl.coverPath.empty()) {
-        FILE *f = fopen(pl.coverPath.c_str(), "rb");
-        if (f) {
-          fclose(f);
-          Image img = LoadImage(pl.coverPath.c_str());
-          if (img.data) {
-            tex = LoadTextureFromImage(img);
-            UnloadImage(img);
-            loaded = true;
-          }
-        }
+        tex = CoverCache::Instance().Get(pl.coverPath);
+        if (tex.id != 0)
+          loaded = true;
       }
+
+      // [HASH MAP] Coba dari coverArtPath lagu pertama yang punya cover
       if (!loaded) {
+        // [LINKED LIST] Iterasi menggunakan range-for pada DoublyLinkedList
         for (const auto &t : pl.tracks) {
           if (!t.coverArtPath.empty()) {
-            FILE *f = fopen(t.coverArtPath.c_str(), "rb");
-            if (f) {
-              fclose(f);
-              Image img = LoadImage(t.coverArtPath.c_str());
-              if (img.data) {
-                tex = LoadTextureFromImage(img);
-                UnloadImage(img);
-                loaded = true;
-                break;
-              }
+            tex = CoverCache::Instance().Get(t.coverArtPath);
+            if (tex.id != 0) {
+              loaded = true;
+              break;
             }
           }
         }
       }
+
+      // [HASH MAP] Gunakan placeholder dari cache jika tidak ada cover
       if (!loaded)
-        tex = Fumbo::Assets::LoadTexture("assets/images/placeholder.png");
+        tex = CoverCache::Instance().Get("assets/images/placeholder.png");
 
       m_resultCovers.push_back(tex);
     }
@@ -311,7 +309,7 @@ void SearchScreen::DrawDirty() {
     Fumbo::Graphic2D::DrawText(dispName, {textX, rowTop + 14.0f}, SpaceB, 22,
                                isHovered ? WHITE : currentTheme.second1);
 
-    // Gambar jumlah lagu di bawah nama playlist.
+    // [LINKED LIST] Gambar jumlah lagu menggunakan DoublyLinkedList::size()
     std::string trackCount =
         std::to_string(pl.tracks.size()) + " " + Lang::Get("lagu", "tracks");
     Fumbo::Graphic2D::DrawText(trackCount, {textX, rowTop + 44.0f}, SpaceB, 15,

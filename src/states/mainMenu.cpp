@@ -1,6 +1,7 @@
 #include "mainMenu.hpp"
 #include "../core/appState.hpp"
 #include "../core/core.hpp"
+#include "../core/coverCache.hpp"
 #include "../core/globals.hpp"
 #include "../core/vlcMetadata.hpp"
 #include "addPlaylist.hpp"
@@ -52,18 +53,14 @@ void MainMenu::Init()
 
 void MainMenu::Cleanup()
 {
-  for (auto &e : m_cards)
-    if (e.coverTex.id != 0)
-      UnloadTexture(e.coverTex);
+  // [HASH MAP] Tidak perlu UnloadTexture per kartu karena
+  // masa hidup tekstur dikelola oleh CoverCache (hash map).
   m_cards.clear();
 }
 
 void MainMenu::RebuildCards()
 {
-  // Hapus tekstur lama sebelum membangun ulang
-  for (auto &e : m_cards)
-    if (e.coverTex.id != 0)
-      UnloadTexture(e.coverTex);
+  // [HASH MAP] Bersihkan referensi lokal tanpa menghapus tekstur dari cache
   m_cards.clear();
 
   auto playlists = AppState::Instance().playlists;
@@ -96,49 +93,37 @@ void MainMenu::RebuildCards()
     float cardX = startX + col * (CARD_W + CARD_GAP);
     float cardY = startY + row * (CARD_H + CARD_GAP);
 
-    // Muat tekstur sampul ambil dari coverPath playlist terlebih dahulu lalu
-    // dari lagu pertama yang punya cover atau gambar placeholder
+    // [HASH MAP] Ambil tekstur sampul dari CoverCache (hash map)
+    // Alih-alih memuat file gambar dari disk setiap kali rebuild,
+    // CoverCache.Get() mengembalikan tekstur dari hash map O(1) jika sudah ada.
     Texture2D tex{};
     bool loaded = false;
+
     if (!pl.coverPath.empty())
     {
-      FILE *f = fopen(pl.coverPath.c_str(), "rb");
-      if (f)
-      {
-        fclose(f);
-        Image img = LoadImage(pl.coverPath.c_str());
-        if (img.data)
-        {
-          tex = LoadTextureFromImage(img);
-          UnloadImage(img);
-          loaded = true;
-        }
-      }
+      tex = CoverCache::Instance().Get(pl.coverPath);
+      if (tex.id != 0)
+        loaded = true;
     }
     if (!loaded)
     {
+      // [LINKED LIST] Iterasi menggunakan range-for pada DoublyLinkedList
       for (const auto &t : pl.tracks)
       {
         if (!t.coverArtPath.empty())
         {
-          FILE *f = fopen(t.coverArtPath.c_str(), "rb");
-          if (f)
+          // [HASH MAP] Ambil dari cache — cache hit O(1), cache miss: muat lalu simpan
+          tex = CoverCache::Instance().Get(t.coverArtPath);
+          if (tex.id != 0)
           {
-            fclose(f);
-            Image img = LoadImage(t.coverArtPath.c_str());
-            if (img.data)
-            {
-              tex = LoadTextureFromImage(img);
-              UnloadImage(img);
-              loaded = true;
-              break;
-            }
+            loaded = true;
+            break;
           }
         }
       }
     }
     if (!loaded)
-      tex = Fumbo::Assets::LoadTexture("assets/images/placeholder.png");
+      tex = CoverCache::Instance().Get("assets/images/placeholder.png");
 
     Rectangle bounds{cardX, cardY, CARD_W, CARD_H};
     CardEntry entry;

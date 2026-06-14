@@ -26,6 +26,9 @@ static constexpr float CTRL_CENTER_X = 640.0f;
 static constexpr float PROG_Y = 565.0f;
 static constexpr float PROG_H = 6.0f;
 
+// Jumlah detik untuk maju/mundur saat menekan tombol panah
+static constexpr float SEEK_STEP_SECONDS = 5.0f;
+
 // Format detik menjadi string menit:detik
 static std::string FormatTime(float seconds) {
   int s = (int)seconds;
@@ -128,6 +131,7 @@ void PlayMusic::Cleanup() {
 
 void PlayMusic::LoadCurrentTrack() {
   auto &state = AppState::Instance();
+  // [CIRCULAR LINKED LIST] Ambil lagu saat ini dari senarai melingkar
   const Track *t = state.CurrentTrack();
   if (!t)
     return;
@@ -138,7 +142,8 @@ void PlayMusic::LoadCurrentTrack() {
     m_coverTex = {};
   }
 
-  m_loadedQueueIndex = state.currentQueueIndex;
+  // [CIRCULAR LINKED LIST] Simpan pointer track untuk mendeteksi perubahan lagu
+  m_loadedTrackPtr = t;
 
   // Muat tekstur sampul seni
   m_coverTex = VlcMeta::LoadCoverTexture(t->coverArtPath);
@@ -161,8 +166,9 @@ void PlayMusic::Update() {
   auto &state = AppState::Instance();
   auto &audio = Fumbo::Engine::Instance().GetAudioManager();
 
-  // Muat ulang jika indeks antrean berubah dari luar
-  if (state.currentQueueIndex != m_loadedQueueIndex)
+  // [CIRCULAR LINKED LIST] Muat ulang jika lagu saat ini berubah dari luar
+  // Perbandingan menggunakan pointer alih-alih indeks karena circular list
+  if (state.CurrentTrack() != m_loadedTrackPtr)
     LoadCurrentTrack();
 
   // Beralih putar atau jeda
@@ -181,6 +187,32 @@ void PlayMusic::Update() {
   if (m_prevBtn.IsPressed()) {
     state.PrevTrack();
     LoadCurrentTrack();
+  }
+
+  // Tombol Space: Jeda/Lanjutkan pemutaran (toggle play/pause)
+  if (IsKeyPressed(KEY_SPACE)) {
+    state.TogglePlayPause();
+  }
+
+  // Tombol Panah Kanan: Maju 5 detik ke depan
+  if (IsKeyPressed(KEY_RIGHT)) {
+    float currentPos = audio.GetMusicPlayed(0);
+    float totalLength = audio.GetMusicLength(0);
+    float newPos = currentPos + SEEK_STEP_SECONDS;
+    // Pastikan posisi baru tidak melebihi durasi total lagu
+    if (newPos < totalLength) {
+      audio.SeekMusic(newPos, 0);
+    }
+  }
+
+  // Tombol Panah Kiri: Mundur 5 detik ke belakang
+  if (IsKeyPressed(KEY_LEFT)) {
+    float currentPos = audio.GetMusicPlayed(0);
+    float newPos = currentPos - SEEK_STEP_SECONDS;
+    // Pastikan posisi baru tidak kurang dari 0
+    if (newPos < 0.0f)
+      newPos = 0.0f;
+    audio.SeekMusic(newPos, 0);
   }
 
   // Perbarui jangkauan dan nilai slider
@@ -272,29 +304,35 @@ void PlayMusic::DrawDirty() {
     Fumbo::Graphic2D::DrawText(m_displayAlbum, {infoX + 10, infoY + 68}, SpaceB,
                                17, {110, 115, 135, 255});
 
-  // Info antrean dan daftar lagu berikutnya
-  if (!state.queue.empty()) {
+  // [CIRCULAR LINKED LIST] Info antrean dan daftar lagu berikutnya
+  if (!state.playQueue.empty()) {
+    // [CIRCULAR LINKED LIST] Tampilkan posisi saat ini di dalam senarai
+    // melingkar
     std::string qInfo = Lang::Get("Lagu ", "Song ") +
-                        std::to_string(state.currentQueueIndex + 1) + " " +
+                        std::to_string(state.GetCurrentQueueIndex() + 1) + " " +
                         Lang::Get("dari ", "of ") +
-                        std::to_string(state.queue.size());
+                        std::to_string(state.GetQueueSize());
     Fumbo::Graphic2D::DrawText(qInfo, {COVER_X + COVER_SIZE + 20, COVER_Y},
                                SpaceB, 16, {110, 115, 135, 255});
 
-    // Daftar lagu yang akan diputar berikutnya
+    // [CIRCULAR LINKED LIST] Daftar lagu yang akan diputar berikutnya
+    // Menggunakan getNextN() yang memanfaatkan sifat melingkar dari senarai:
+    // setelah lagu terakhir, daftar akan menampilkan lagu pertama dan
+    // seterusnya.
     float qy = COVER_Y + 30.0f;
     Fumbo::Graphic2D::DrawText(Lang::Get("Selanjutnya:", "Next Up:"),
                                {COVER_X + COVER_SIZE + 20, qy}, SpaceB, 18,
                                {130, 135, 155, 255});
     qy += 28;
-    for (int i = 1;
-         i <= 5 && state.currentQueueIndex + i < (int)state.queue.size(); ++i) {
-      const auto &nt = state.queue[state.currentQueueIndex + i];
-      std::string ntTitle = nt.title.empty() ? nt.filePath : nt.title;
+
+    std::vector<const Track *> nextTracks = state.playQueue.getNextN(5);
+    for (int i = 0; i < (int)nextTracks.size(); ++i) {
+      const Track *nt = nextTracks[i];
+      std::string ntTitle = nt->title.empty() ? nt->filePath : nt->title;
       if (ntTitle.size() > 28)
         ntTitle = ntTitle.substr(0, 25) + "...";
       Color nc =
-          (i == 1) ? Color{200, 205, 220, 255} : Color{120, 125, 145, 255};
+          (i == 0) ? Color{200, 205, 220, 255} : Color{120, 125, 145, 255};
       Fumbo::Graphic2D::DrawText(ntTitle, {COVER_X + COVER_SIZE + 20, qy},
                                  SpaceB, 15, nc);
       qy += 24;

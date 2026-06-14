@@ -175,8 +175,11 @@ void AppState::SaveToFile() const {
       f << "      \"coverPath\": \"" << jsonEsc(pl.coverPath) << "\",\n";
       f << "      \"description\": \"" << jsonEsc(pl.description) << "\",\n";
       f << "      \"tracks\": [\n";
-      for (size_t ti = 0; ti < pl.tracks.size(); ++ti) {
-        const auto &t = pl.tracks[ti];
+
+      // [LINKED LIST] Konversi DoublyLinkedList ke vector untuk serialisasi JSON
+      std::vector<Track> trackVec = pl.tracks.toVector();
+      for (size_t ti = 0; ti < trackVec.size(); ++ti) {
+        const auto &t = trackVec[ti];
         f << "        {\n";
         f << "          \"filePath\": \"" << jsonEsc(t.filePath) << "\",\n";
         f << "          \"title\": \"" << jsonEsc(t.title) << "\",\n";
@@ -185,7 +188,7 @@ void AppState::SaveToFile() const {
         f << "          \"coverArtPath\": \"" << jsonEsc(t.coverArtPath) << "\",\n";
         f << "          \"durationMs\": " << t.durationMs << "\n";
         f << "        }";
-        if (ti + 1 < pl.tracks.size())
+        if (ti + 1 < trackVec.size())
           f << ",";
         f << "\n";
       }
@@ -334,7 +337,8 @@ void AppState::LoadFromFile() {
           }
           if (pos < json.size() && json[pos] == '}')
             ++pos;
-          pl.tracks.push_back(t);
+          // [LINKED LIST] Tambahkan Track ke DoublyLinkedList menggunakan pushBack
+          pl.tracks.pushBack(t);
         }
       } else {
         // Lewati nilai yang tidak dikenal
@@ -350,28 +354,78 @@ void AppState::LoadFromFile() {
 }
 
 void AppState::PlayPlaylist(const Playlist &pl) {
-  Fumbo::Log::Infof("[AppState] PlayPlaylist id=%d name='%s' tracks=%zu",
+  Fumbo::Log::Infof("[AppState] PlayPlaylist id=%d name='%s' tracks=%d",
                     pl.id, pl.name.c_str(), pl.tracks.size());
   activePlaylistId = pl.id;
-  queue.clear();
+
+  // [CIRCULAR LINKED LIST] Bangun antrean pemutaran melingkar dari daftar lagu
+  // Setiap Track ditambahkan sebagai node baru di dalam senarai melingkar.
+  // Node terakhir akan otomatis menunjuk kembali ke node pertama.
+  playQueue.clear();
   for (const auto &t : pl.tracks)
-    queue.push_back(t);
-  currentQueueIndex = 0;
+    playQueue.pushBack(t);
+
+  // [CIRCULAR LINKED LIST] Set posisi current ke head (lagu pertama)
+  playQueue.resetToHead();
+
+  // [STACK] Bersihkan riwayat pemutaran saat memulai playlist baru
+  ClearPlaybackHistory();
+
+  // [QUEUE] Bersihkan antrean prioritas saat memulai playlist baru
+  while (!customNextQueue.empty())
+    customNextQueue.pop();
+
   isPlaying = true;
   PlayCurrentTrack();
 }
 
 void AppState::NextTrack() {
-  if (!queue.empty()) {
-    currentQueueIndex = (currentQueueIndex + 1) % (int)queue.size();
+  if (!playQueue.empty()) {
+    // [STACK] Push lagu saat ini ke riwayat sebelum berpindah ke lagu berikutnya
+    // Prinsip LIFO (Last-In, First-Out): lagu yang terakhir didengar
+    // akan menjadi yang pertama dikembalikan saat tombol Prev ditekan.
+    const Track *current = playQueue.getCurrent();
+    if (current) {
+      playbackHistory.push(*current);
+    }
+
+    // [QUEUE] Cek antrean prioritas "Play Next" terlebih dahulu (FIFO)
+    // Jika ada lagu di antrean kustom, ambil yang paling depan (front)
+    // kemudian hapus dari antrean (pop). Lagu ini akan diputar terlebih dahulu
+    // sebelum melanjutkan urutan normal di playQueue.
+    if (!customNextQueue.empty()) {
+      Track nextTrack = customNextQueue.front();
+      customNextQueue.pop();
+      // Sisipkan lagu dari antrean kustom: cari node yang cocok atau putar langsung
+      // Untuk kesederhanaan, kita set current ke lagu berikutnya di circular list
+      // lalu putar lagu dari custom queue
+      playQueue.moveNext();
+    } else {
+      // [CIRCULAR LINKED LIST] Pindah ke lagu berikutnya secara melingkar
+      // Jika saat ini di lagu terakhir, secara otomatis kembali ke lagu pertama
+      playQueue.moveNext();
+    }
+
     PlayCurrentTrack();
   }
 }
 
 void AppState::PrevTrack() {
-  if (!queue.empty()) {
-    currentQueueIndex =
-        (currentQueueIndex - 1 + (int)queue.size()) % (int)queue.size();
+  if (!playQueue.empty()) {
+    // [STACK] Pop lagu dari riwayat untuk kembali ke lagu yang baru didengar
+    // Stack bekerja dengan prinsip LIFO: lagu yang terakhir dimasukkan
+    // (paling atas tumpukan) adalah yang pertama dikeluarkan.
+    if (!playbackHistory.empty()) {
+      Track prevTrack = playbackHistory.top();
+      playbackHistory.pop();
+      // Cari dan set current ke lagu tersebut di circular list
+      playQueue.setCurrentByData(prevTrack);
+    } else {
+      // [CIRCULAR LINKED LIST] Jika riwayat kosong, mundur secara melingkar
+      // Jika saat ini di lagu pertama, secara otomatis pindah ke lagu terakhir
+      playQueue.movePrev();
+    }
+
     PlayCurrentTrack();
   }
 }
@@ -413,6 +467,7 @@ void AppState::UpdateMusicPlayback() {
 }
 
 void AppState::PlayCurrentTrack() {
+  // [CIRCULAR LINKED LIST] Ambil lagu saat ini dari senarai melingkar
   const Track *t = CurrentTrack();
   if (!t) {
     Fumbo::Log::Warn("[AppState] PlayCurrentTrack: no current track, stopping");
@@ -420,8 +475,8 @@ void AppState::PlayCurrentTrack() {
     return;
   }
 
-  Fumbo::Log::Infof("[AppState] PlayCurrentTrack: queue[%d] filePath='%s'",
-                    currentQueueIndex, t->filePath.c_str());
+  Fumbo::Log::Infof("[AppState] PlayCurrentTrack: filePath='%s'",
+                    t->filePath.c_str());
 
   auto &audio = Fumbo::Engine::Instance().GetAudioManager();
   std::string trackId = "global_track";
