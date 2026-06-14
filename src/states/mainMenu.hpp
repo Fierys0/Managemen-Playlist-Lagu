@@ -5,7 +5,8 @@
 #include <utility> // pair
 #include <vector>
 
-class MainMenu : public IGameState {
+class MainMenu : public IGameState
+{
 public:
   void Init() override;
   void Cleanup() override;
@@ -17,8 +18,11 @@ private:
   Fumbo::UI::Button m_plusBtn;
   Fumbo::UI::Button m_leftBtn;
   Fumbo::UI::Button m_rightBtn;
+  Fumbo::UI::Button m_sortDateBtn;
+  Fumbo::UI::Button m_sortNameBtn;
 
-  struct CardEntry {
+  struct CardEntry
+  {
     PlaylistCard card;
     Texture2D coverTex{};
     int playlistId{-1};
@@ -27,6 +31,13 @@ private:
 
   void RebuildCards();
   int m_lastPlaylistCount{-1};
+
+  enum class SortMode
+  {
+    ByDate,
+    ByName
+  };
+  SortMode m_sortMode = SortMode::ByDate;
 
   // Pagination & Slide transition animation variables
   int m_currentPage{0};

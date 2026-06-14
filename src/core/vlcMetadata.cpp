@@ -10,7 +10,8 @@
 // Instance VLC global pada level modul
 static libvlc_instance_t *s_vlc = nullptr;
 
-void VlcMeta::Init() {
+void VlcMeta::Init()
+{
   if (s_vlc)
     return;
   // Sembunyikan output VLC
@@ -22,15 +23,18 @@ void VlcMeta::Init() {
     Fumbo::Log::Error("[VLC] libvlc_new() returned null — VLC not available");
 }
 
-void VlcMeta::Shutdown() {
-  if (s_vlc) {
+void VlcMeta::Shutdown()
+{
+  if (s_vlc)
+  {
     libvlc_release(s_vlc);
     s_vlc = nullptr;
   }
 }
 
 // Ambil nama file tanpa ekstensi dari path lengkap
-static std::string stemFromPath(const std::string &path) {
+static std::string stemFromPath(const std::string &path)
+{
   size_t slash = path.find_last_of("/\\");
   std::string name =
       (slash == std::string::npos) ? path : path.substr(slash + 1);
@@ -40,14 +44,16 @@ static std::string stemFromPath(const std::string &path) {
   return name;
 }
 
-Track VlcMeta::GetTrackInfo(const std::string &filePath) {
+Track VlcMeta::GetTrackInfo(const std::string &filePath)
+{
   Track t;
   t.filePath = filePath;
   t.title = stemFromPath(filePath); // judul cadangan jika metadata tidak ada
 
   Fumbo::Log::Infof("[VLC] GetTrackInfo: '%s'", filePath.c_str());
 
-  if (!s_vlc) {
+  if (!s_vlc)
+  {
     Fumbo::Log::Warn("[VLC] s_vlc is null, returning stub track");
     return t;
   }
@@ -59,7 +65,8 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath) {
       c = '/';
 
   libvlc_media_t *m = libvlc_media_new_path(s_vlc, normalizedPath.c_str());
-  if (!m) {
+  if (!m)
+  {
     Fumbo::Log::Errorf("[VLC] libvlc_media_new_path failed for: '%s'", normalizedPath.c_str());
     return t;
   }
@@ -74,11 +81,13 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath) {
   // Tunggu hingga parsing selesai (maks 5 detik)
   using namespace std::chrono;
   auto deadline = steady_clock::now() + seconds(5);
-  while (steady_clock::now() < deadline) {
+  while (steady_clock::now() < deadline)
+  {
     libvlc_media_parsed_status_t st = libvlc_media_get_parsed_status(m);
     if (st == libvlc_media_parsed_status_done ||
         st == libvlc_media_parsed_status_failed ||
-        st == libvlc_media_parsed_status_timeout) {
+        st == libvlc_media_parsed_status_timeout)
+    {
       if (st == libvlc_media_parsed_status_failed)
         Fumbo::Log::Warnf("[VLC] Parse failed for: '%s'", normalizedPath.c_str());
       else if (st == libvlc_media_parsed_status_timeout)
@@ -88,7 +97,8 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath) {
     std::this_thread::sleep_for(milliseconds(50));
   }
 
-  auto getMeta = [&](libvlc_meta_t key) -> std::string {
+  auto getMeta = [&](libvlc_meta_t key) -> std::string
+  {
     const char *v = libvlc_media_get_meta(m, key);
     return v ? std::string(v) : std::string{};
   };
@@ -104,16 +114,22 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath) {
   t.album = getMeta(libvlc_meta_Album);
 
   std::string artUrl = getMeta(libvlc_meta_ArtworkURL);
-  if (!artUrl.empty()) {
-    if (artUrl.substr(0, 8) == "file:///") {
+  if (!artUrl.empty())
+  {
+    if (artUrl.substr(0, 8) == "file:///")
+    {
 #ifdef _WIN32
       t.coverArtPath = artUrl.substr(8);
 #else
       t.coverArtPath = artUrl.substr(7);
 #endif
-    } else if (artUrl.substr(0, 7) == "file://") {
+    }
+    else if (artUrl.substr(0, 7) == "file://")
+    {
       t.coverArtPath = artUrl.substr(7);
-    } else {
+    }
+    else
+    {
       t.coverArtPath = artUrl;
     }
   }
@@ -128,16 +144,20 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath) {
   return t;
 }
 
-Texture2D VlcMeta::LoadCoverTexture(const std::string &coverArtPath) {
-  if (!coverArtPath.empty()) {
+Texture2D VlcMeta::LoadCoverTexture(const std::string &coverArtPath)
+{
+  if (!coverArtPath.empty())
+  {
     // Periksa apakah file ada sebelum mencoba memuatnya
     FILE *f = fopen(coverArtPath.c_str(), "rb");
-    if (f) {
+    if (f)
+    {
       fclose(f);
       // Muat langsung via raylib (melewati asset pack karena ini path cache
       // sistem)
       Image img = LoadImage(coverArtPath.c_str());
-      if (img.data) {
+      if (img.data)
+      {
         Texture2D tex = LoadTextureFromImage(img);
         UnloadImage(img);
         if (tex.id != 0)
