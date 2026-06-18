@@ -1,7 +1,9 @@
 #include "appState.hpp"
 #include "fumbo.hpp"
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
+#include <random>
 #include <sstream>
 #include <string>
 
@@ -176,7 +178,7 @@ void AppState::SaveToFile() const {
       f << "      \"description\": \"" << jsonEsc(pl.description) << "\",\n";
       f << "      \"tracks\": [\n";
 
-      // [LINKED LIST] Konversi DoublyLinkedList ke vector untuk serialisasi JSON
+      // Daftar berantai ganda Konversi DoublyLinkedList ke vector untuk serialisasi JSON
       std::vector<Track> trackVec = pl.tracks.toVector();
       for (size_t ti = 0; ti < trackVec.size(); ++ti) {
         const auto &t = trackVec[ti];
@@ -337,7 +339,7 @@ void AppState::LoadFromFile() {
           }
           if (pos < json.size() && json[pos] == '}')
             ++pos;
-          // [LINKED LIST] Tambahkan Track ke DoublyLinkedList menggunakan pushBack
+          // Daftar berantai ganda Tambahkan Track ke DoublyLinkedList menggunakan pushBack
           pl.tracks.pushBack(t);
         }
       } else {
@@ -379,17 +381,63 @@ void AppState::PlayPlaylist(const Playlist &pl) {
   PlayCurrentTrack();
 }
 
+void AppState::PlayPlaylistShuffled(const Playlist &pl) {
+  Fumbo::Log::Infof("[AppState] PlayPlaylistShuffled id=%d name='%s' tracks=%d",
+                    pl.id, pl.name.c_str(), pl.tracks.size());
+  activePlaylistId = pl.id;
+
+  // Konversi tracks ke vector, acak urutannya, lalu bangun circular list
+  std::vector<Track> trackVec = pl.tracks.toVector();
+  std::random_device rd;
+  std::mt19937 rng(rd());
+  std::shuffle(trackVec.begin(), trackVec.end(), rng);
+
+  playQueue.clear();
+  for (auto &t : trackVec)
+    playQueue.pushBack(t);
+
+  playQueue.resetToHead();
+  ClearPlaybackHistory();
+  while (!customNextQueue.empty())
+    customNextQueue.pop();
+
+  isPlaying = true;
+  PlayCurrentTrack();
+}
+
+void AppState::PlayPlaylistFromTrack(const Playlist &pl, int trackIndex) {
+  Fumbo::Log::Infof("[AppState] PlayPlaylistFromTrack id=%d trackIndex=%d",
+                    pl.id, trackIndex);
+  activePlaylistId = pl.id;
+
+  playQueue.clear();
+  for (const auto &t : pl.tracks)
+    playQueue.pushBack(t);
+
+  playQueue.resetToHead();
+  // Maju ke indeks lagu yang dipilih
+  for (int i = 0; i < trackIndex; ++i)
+    playQueue.moveNext();
+
+  ClearPlaybackHistory();
+  while (!customNextQueue.empty())
+    customNextQueue.pop();
+
+  isPlaying = true;
+  PlayCurrentTrack();
+}
+
 void AppState::NextTrack() {
   if (!playQueue.empty()) {
     // [STACK] Push lagu saat ini ke riwayat sebelum berpindah ke lagu berikutnya
-    // Prinsip LIFO (Last-In, First-Out): lagu yang terakhir didengar
+    // Prinsip LIFO Last In First Out lagu yang terakhir didengar
     // akan menjadi yang pertama dikembalikan saat tombol Prev ditekan.
     const Track *current = playQueue.getCurrent();
     if (current) {
       playbackHistory.push(*current);
     }
 
-    // [QUEUE] Cek antrean prioritas "Play Next" terlebih dahulu (FIFO)
+    // [QUEUE] Cek antrean prioritas putar nanti terlebih dahulu FIFO
     // Jika ada lagu di antrean kustom, ambil yang paling depan (front)
     // kemudian hapus dari antrean (pop). Lagu ini akan diputar terlebih dahulu
     // sebelum melanjutkan urutan normal di playQueue.
@@ -459,7 +507,7 @@ void AppState::UpdateMusicPlayback() {
   if (isPlaying && isAudioLoaded) {
     float len = audio.GetMusicLength(0);
     float pos = audio.GetMusicPlayed(0);
-    if (len > 0.0f && pos >= len - 0.1f) {
+    if (len > 0 && pos >= len - 0.1) {
       Fumbo::Log::Info("[AppState] Track ended, advancing to next");
       NextTrack();
     }
@@ -488,7 +536,7 @@ void AppState::PlayCurrentTrack() {
       Fumbo::Log::Info("[AppState] Track changed while playing — starting fade-out transition");
       m_nextTrackToPlay = *t;
       m_isFadingOutTransition = true;
-      audio.StopMusicFade(0, 0.5f);
+      audio.StopMusicFade(0, 0.5);
       loadedTrackPath = "";
       return;
     } else {

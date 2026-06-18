@@ -7,8 +7,8 @@
 #include <string>
 
 // Konstanta posisi konten halaman pengaturan
-static constexpr float S_CONTENT_X = 90.0f;
-static constexpr float S_CONTENT_Y = 80.0f;
+static constexpr float S_CONTENT_X = 90;
+static constexpr float S_CONTENT_Y = 80;
 
 void Settings::Init() {
   AppCore::currentScreen = AppCore::Screen::Settings;
@@ -16,7 +16,7 @@ void Settings::Init() {
   // Tombol ganti tema warna
   m_toggleThemeBtn = Fumbo::UI::Button({S_CONTENT_X, S_CONTENT_Y, 260, 52});
   m_toggleThemeBtn.ApplyStyle(btnstyle);
-  m_toggleThemeBtn.Roundness(0.2f);
+  m_toggleThemeBtn.Roundness(0.2);
   m_toggleThemeBtn.AddText(Lang::Get("Ganti Tema", "Change Theme"), SpaceB, 20,
                            currentTheme.second1);
 
@@ -25,7 +25,7 @@ void Settings::Init() {
   m_toggleTrailsBtn =
       Fumbo::UI::Button({S_CONTENT_X, S_CONTENT_Y + 70, 260, 52});
   m_toggleTrailsBtn.ApplyStyle(btnstyle);
-  m_toggleTrailsBtn.Roundness(0.2f);
+  m_toggleTrailsBtn.Roundness(0.2);
   std::string trailLabel =
       Lang::Get("Jejak: ", "Trails: ") +
       (trailsOn ? Lang::Get("AKTIF", "ON") : Lang::Get("MATI", "OFF"));
@@ -35,14 +35,14 @@ void Settings::Init() {
   m_toggleLangBtn =
       Fumbo::UI::Button({S_CONTENT_X, S_CONTENT_Y + 140, 260, 52});
   m_toggleLangBtn.ApplyStyle(btnstyle);
-  m_toggleLangBtn.Roundness(0.2f);
+  m_toggleLangBtn.Roundness(0.2);
   std::string langLabel = Lang::Get("Bahasa: INDONESIA", "Language: ENGLISH");
   m_toggleLangBtn.AddText(langLabel, SpaceB, 20, currentTheme.second1);
 
   // Tombol kembali ke menu utama
   m_backBtn = Fumbo::UI::Button({S_CONTENT_X, S_CONTENT_Y + 230, 130, 48});
   m_backBtn.ApplyStyle(btnstyle);
-  m_backBtn.Roundness(0.2f);
+  m_backBtn.Roundness(0.2);
   m_backBtn.AddText(Lang::Get("< Kembali", "< Back"), SpaceB, 18,
                     currentTheme.second1);
 }

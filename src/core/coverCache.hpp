@@ -4,40 +4,39 @@
 #include <unordered_map>
 
 // =============================================================================
-// [HASH MAP] CoverCache — Cache Tekstur Sampul Album menggunakan Hash Map
+// [HASH MAP] Cache Tekstur Sampul Album menggunakan Hash Map
 // =============================================================================
-// Menggunakan std::unordered_map (Hash Map) untuk menyimpan tekstur sampul
-// album yang sudah dimuat dari disk. Ketika sebuah path gambar diminta,
-// cache akan memeriksa apakah tekstur sudah ada di dalam hash map:
-// - Jika sudah ada (cache hit): kembalikan tekstur langsung, O(1).
-// - Jika belum ada (cache miss): muat dari disk, simpan ke hash map, lalu
-//   kembalikan.
-// Ini menghindari pemuatan ulang file gambar yang sama berulang kali,
-// yang sebelumnya menyebabkan lag pada layar pencarian dan menu utama.
+// Menggunakan std::unordered_map atau Tabel Hash untuk menyimpan tekstur sampul
+// album yang sudah dimuat dari disk. Ketika sebuah path gambar diminta
+// cache akan memeriksa apakah tekstur sudah ada di dalam tabel hash
+// Jika sudah ada kembalikan tekstur langsung dengan kompleksitas O 1
+// Jika belum ada muat dari disk simpan ke tabel hash lalu kembalikan
+// Ini menghindari pemuatan ulang file gambar yang sama secara berulang kali
+// yang sebelumnya menyebabkan lag pada layar pencarian dan menu utama
 // =============================================================================
 class CoverCache {
 public:
-  // [HASH MAP] Singleton instance — hanya satu cache untuk seluruh aplikasi
+  // [HASH MAP] Singleton instance hanya satu cache untuk seluruh aplikasi
   static CoverCache &Instance() {
     static CoverCache instance;
     return instance;
   }
 
-  // [HASH MAP] Get — Ambil tekstur dari cache berdasarkan path file
-  // Jika belum ada di hash map, muat dari disk dan simpan ke cache.
-  // Kompleksitas rata-rata: O(1) berkat fungsi hash pada std::unordered_map
+  // [HASH MAP] Ambil tekstur dari cache berdasarkan path file
+  // Jika belum ada di tabel hash muat dari disk dan simpan ke cache
+  // Kompleksitas rata rata O 1 berkat fungsi hash pada std::unordered_map
   Texture2D Get(const std::string &path) {
     if (path.empty())
       return {};
 
-    // [HASH MAP] Cari di hash map menggunakan path sebagai key
+    // [HASH MAP] Cari di tabel hash menggunakan path sebagai kunci
     auto it = m_cache.find(path);
     if (it != m_cache.end()) {
-      // Cache hit: tekstur sudah ada, kembalikan langsung
+      // Tekstur ditemukan kembalikan langsung
       return it->second;
     }
 
-    // Cache miss: muat tekstur dari disk
+    // Tekstur tidak ditemukan muat dari disk
     Texture2D tex{};
     FILE *f = fopen(path.c_str(), "rb");
     if (f) {
@@ -49,19 +48,19 @@ public:
       }
     }
 
-    // [HASH MAP] Simpan tekstur ke hash map dengan path sebagai key
+    // [HASH MAP] Simpan tekstur ke tabel hash dengan path sebagai kunci
     if (tex.id != 0) {
       m_cache[path] = tex;
     }
     return tex;
   }
 
-  // [HASH MAP] GetPlaceholder — Ambil tekstur placeholder dari cache
+  // [HASH MAP] Ambil tekstur placeholder dari cache
   Texture2D GetPlaceholder(const std::string &placeholderPath) {
     return Get(placeholderPath);
   }
 
-  // [HASH MAP] Invalidate — Hapus satu entri dari hash map
+  // [HASH MAP] Hapus satu entri dari tabel hash
   // Digunakan saat gambar sampul diganti oleh pengguna
   void Invalidate(const std::string &path) {
     auto it = m_cache.find(path);
@@ -72,7 +71,7 @@ public:
     }
   }
 
-  // [HASH MAP] Clear — Bersihkan seluruh hash map dan bebaskan semua tekstur
+  // [HASH MAP] Bersihkan seluruh tabel hash dan bebaskan semua tekstur
   void Clear() {
     for (auto &pair : m_cache) {
       if (pair.second.id != 0)
@@ -88,8 +87,8 @@ private:
   CoverCache() = default;
   ~CoverCache() { Clear(); }
 
-  // [HASH MAP] Hash map internal: key = path file (string), value = Texture2D
-  // std::unordered_map menggunakan fungsi hash untuk memetakan key ke bucket,
-  // sehingga operasi pencarian, penyisipan, dan penghapusan berjalan O(1) rata-rata.
+  // [HASH MAP] internal tabel hash kunci adalah path file string dan nilai adalah Texture2D
+  // std::unordered_map menggunakan fungsi hash untuk memetakan kunci ke bucket
+  // sehingga operasi pencarian penyisipan dan penghapusan berjalan O 1 rata rata
   std::unordered_map<std::string, Texture2D> m_cache;
 };

@@ -4,20 +4,20 @@ void MouseTrails::Init() {
   Vector2 mouse = GetMousePosition();
   Vector2 scale = Fumbo::Utils::GetUIScale();
   m_cursorPos = {mouse.x / scale.x, mouse.y / scale.y};
-  m_timeElapsed = 0.0f;
+  m_timeElapsed = 0;
 
   float w = Fumbo::Utils::UI_WIDTH;
   float h = Fumbo::Utils::UI_HEIGHT;
 
   int count = 0;
-  float spacing = 26.0f;
-  float hexHeight = spacing * 0.866025f; // tinggi heksagon: sqrt(3)/2
+  float spacing = 26;
+  float hexHeight = spacing * 0.866025; // tinggi heksagon: sqrt(3)/2
 
-  for (float y = -100.0f; y < h + 100.0f; y += hexHeight) {
+  for (float y = -100; y < h + 100; y += hexHeight) {
     bool stagger = ((int)(y / hexHeight) % 2) != 0;
-    float startX = stagger ? -100.0f + spacing * 0.5f : -100.0f;
+    float startX = stagger ? -100 + spacing * 0.5 : -100;
 
-    for (float x = startX; x < w + 100.0f; x += spacing) {
+    for (float x = startX; x < w + 100; x += spacing) {
       if (count >= PARTICLE_COUNT)
         break;
 
@@ -27,9 +27,9 @@ void MouseTrails::Init() {
 
       // Gradien warna spasial statis berdasarkan posisi asal
       float factor = (y + x) / (w + h);
-      m_particles[count].hueOffset = 240.0f + factor * 120.0f;
-      m_particles[count].hueSpeed = 0.0f;
-      m_particles[count].baseSize = 2.0f;
+      m_particles[count].hueOffset = 240 + factor * 120;
+      m_particles[count].hueSpeed = 0;
+      m_particles[count].baseSize = 2;
 
       count++;
     }
@@ -69,14 +69,14 @@ void MouseTrails::Update() {
 
     // Tarikan gravitasi: partikel tertarik ke kursor
     // Tarikan kuat di dekat kursor, melemah secara eksponensial dengan jarak
-    float pullMax = 70.0f;    // pergeseran maksimum dalam piksel
-    float pullDecay = 280.0f; // radius pengaruh
+    float pullMax = 70;    // pergeseran maksimum dalam piksel
+    float pullDecay = 280; // radius pengaruh
     float pull = pullMax * expf(-dist / pullDecay);
 
     // Target = posisi asal yang digeser ke arah kursor
     Vector2 target;
-    if (dist > 0.5f) {
-      float invDist = 1.0f / dist;
+    if (dist > 0.5) {
+      float invDist = 1 / dist;
       target.x = p.homePos.x + dx * invDist * pull;
       target.y = p.homePos.y + dy * invDist * pull;
     } else {
@@ -84,11 +84,11 @@ void MouseTrails::Update() {
     }
 
     // Pegas menuju posisi target
-    float springK = 8.0f;
+    float springK = 8;
     p.vel.x += (target.x - p.pos.x) * springK * dt;
     p.vel.y += (target.y - p.pos.y) * springK * dt;
-    p.vel.x *= 0.90f; // redaman
-    p.vel.y *= 0.90f;
+    p.vel.x *= 0.90; // redaman
+    p.vel.y *= 0.90;
     p.pos.x += p.vel.x;
     p.pos.y += p.vel.y;
   }
@@ -109,17 +109,17 @@ void MouseTrails::Draw() {
 
     // Morfing ukuran: panjang gelombang besar agar hanya satu puncak yang
     // terlihat
-    float wavePhase = dist * 0.018f - m_timeElapsed * 0.5f;
-    float currentSize = 1.3f + sinf(wavePhase) * 1.0f;
+    float wavePhase = dist * 0.018 - m_timeElapsed * 0.5;
+    float currentSize = 1.3 + sinf(wavePhase) * 1;
 
     // Alpha memudar di luar zona kosong agar tepinya tidak tajam
-    float fadeRadius = 45.0f;
-    float alphaFactor = 1.0f;
+    float fadeRadius = 45;
+    float alphaFactor = 1;
     if (dist < m_blankRadius + fadeRadius) {
       alphaFactor = (dist - m_blankRadius) / fadeRadius;
-    } else if (dist > 150.0f) {
+    } else if (dist > 150) {
       // Memudar lebih cepat agar efek tidak terlalu lebar
-      alphaFactor = fmaxf(0.0f, 1.0f - (dist - 150.0f) / 150.0f);
+      alphaFactor = fmaxf(0, 1 - (dist - 150) / 150);
     }
 
     unsigned char alpha = (unsigned char)(190 * alphaFactor);
@@ -127,17 +127,17 @@ void MouseTrails::Draw() {
       continue; // lewati partikel yang tidak terlihat
 
     // Warna berdasarkan gradien spasial
-    Color c = ColorFromHSV(p.hueOffset, 0.85f, 0.95f);
+    Color c = ColorFromHSV(p.hueOffset, 0.85, 0.95);
     c.a = alpha;
 
     // Jejak gerak saat partikel bergerak cepat
     float speed = sqrtf(p.vel.x * p.vel.x + p.vel.y * p.vel.y);
-    if (speed > 1.5f && currentSize > 1.0f) {
-      float trailLen = fminf(speed * 0.35f, 8.0f);
-      float invSpd = 1.0f / speed;
+    if (speed > 1.5 && currentSize > 1) {
+      float trailLen = fminf(speed * 0.35, 8);
+      float invSpd = 1 / speed;
       Vector2 dir = {p.vel.x * invSpd, p.vel.y * invSpd};
       Vector2 tail = {p.pos.x - dir.x * trailLen, p.pos.y - dir.y * trailLen};
-      Fumbo::Graphic2D::DrawLineEx(tail, p.pos, currentSize * 0.7f, c);
+      Fumbo::Graphic2D::DrawLineEx(tail, p.pos, currentSize * 0.7, c);
     } else {
       Fumbo::Graphic2D::DrawCircleV(p.pos, currentSize, c);
     }

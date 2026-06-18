@@ -9,8 +9,8 @@
 #include <string>
 
 // Konstanta tata letak halaman buat playlist
-static constexpr float AP_CONTENT_X = 80.0f;
-static constexpr float AP_CONTENT_Y = 70.0f;
+static constexpr float AP_CONTENT_X = 80;
+static constexpr float AP_CONTENT_Y = 70;
 
 AddPlaylist::AddPlaylist(int playlistId) : m_playlistId(playlistId) {}
 
@@ -18,12 +18,12 @@ void AddPlaylist::Init() {
   // Tombol sampul playlist
   m_coverBtn = Fumbo::UI::Button({AP_CONTENT_X, AP_CONTENT_Y + 20, 190, 190});
   m_coverBtn.ApplyStyle(btnstyle);
-  m_coverBtn.Roundness(0.12f);
+  m_coverBtn.Roundness(0.12);
   m_coverBtn.AddText(Lang::Get("+ Sampul", "+ Cover"), SpaceB, 18,
                      currentTheme.second1);
 
-  // Konfigurasi textbox
-  m_tbConfig.cornerRoundness = 0.15f;
+  // Konfigurasi kotak teks
+  m_tbConfig.cornerRoundness = 0.15;
   m_tbConfig.padding = {10, 8};
   m_tbConfig.backgroundColor = {30, 33, 40, 255};
   m_tbConfig.outlineColor = {60, 65, 80, 255};
@@ -31,32 +31,40 @@ void AddPlaylist::Init() {
   m_tbConfig.textColor = WHITE;
   m_tbConfig.cursorColor = {80, 160, 255, 255};
 
-  // Textbox nama playlist
+  // Kotak teks nama playlist
   m_titleBox = Fumbo::UI::Textbox(
-      {AP_CONTENT_X + 210, AP_CONTENT_Y + 20, 450, 60}, SpaceB, 36);
+      {AP_CONTENT_X + 210, AP_CONTENT_Y + 15, 630, 45}, SpaceB, 24);
   m_titleBox.SetStyle(m_tbConfig);
   m_titleBox.SetText(Lang::Get("Playlist Baru", "New Playlist"));
 
+  // Kotak teks deskripsi playlist
+  m_descBox = Fumbo::UI::Textbox(
+      {AP_CONTENT_X + 210, AP_CONTENT_Y + 70, 630, 80}, SpaceB, 18);
+  m_descBox.SetStyle(m_tbConfig);
+  m_descBox.SetMultiline(true);
+  m_descBox.SetMaxLines(3);
+  m_descBox.SetText(Lang::Get("Deskripsi Playlist", "Playlist Description"));
+
   // Tombol tambah musik
   m_addMusicBtn =
-      Fumbo::UI::Button({AP_CONTENT_X + 210, AP_CONTENT_Y + 100, 320, 55});
+      Fumbo::UI::Button({AP_CONTENT_X + 210, AP_CONTENT_Y + 160, 320, 45});
   m_addMusicBtn.ApplyStyle(btnstyle);
-  m_addMusicBtn.Roundness(0.2f);
+  m_addMusicBtn.Roundness(0.2);
   m_addMusicBtn.AddText(Lang::Get("+ Tambah File Musik", "+ Add Music Files"),
                         SpaceB, 18, currentTheme.second1);
 
   // Tombol simpan
   m_saveBtn =
-      Fumbo::UI::Button({AP_CONTENT_X + 545, AP_CONTENT_Y + 100, 120, 55});
+      Fumbo::UI::Button({AP_CONTENT_X + 545, AP_CONTENT_Y + 160, 120, 45});
   m_saveBtn.ApplyStyle(btnstyle);
-  m_saveBtn.Roundness(0.2f);
+  m_saveBtn.Roundness(0.2);
   m_saveBtn.AddText(Lang::Get("SIMPAN", "SAVE"), SpaceB, 20,
                     currentTheme.second1);
 
-  // Tombol kembali ke menu utama
+  // Tombol kembali
   m_backBtn = Fumbo::UI::Button({AP_CONTENT_X, AP_CONTENT_Y + 220, 190, 44});
   m_backBtn.ApplyStyle(btnstyle);
-  m_backBtn.Roundness(0.2f);
+  m_backBtn.Roundness(0.2);
   m_backBtn.AddText(Lang::Get("< Kembali", "< Back"), SpaceB, 20,
                     currentTheme.second1);
 
@@ -71,8 +79,9 @@ void AddPlaylist::Init() {
     }
     if (found) {
       m_titleBox.SetText(found->name);
+      m_descBox.SetText(found->description);
       m_coverPath = found->coverPath;
-      // [LINKED LIST] Konversi DoublyLinkedList ke vector untuk diedit di UI
+      // [LINKED LIST] Konversi DoublyLinkedList ke vector untuk diubah di antarmuka pengguna
       m_tracks = found->tracks.toVector();
 
       if (!m_coverPath.empty()) {
@@ -94,9 +103,9 @@ void AddPlaylist::Init() {
 
     // Konfigurasi tombol HAPUS
     m_deleteBtn =
-        Fumbo::UI::Button({AP_CONTENT_X + 680, AP_CONTENT_Y + 100, 160, 55});
+        Fumbo::UI::Button({AP_CONTENT_X + 680, AP_CONTENT_Y + 160, 160, 45});
     m_deleteBtn.ApplyStyle(btnstyle);
-    m_deleteBtn.Roundness(0.2f);
+    m_deleteBtn.Roundness(0.2);
     m_deleteBtn.AddText(Lang::Get("HAPUS", "DELETE"), SpaceB, 20, RED);
   }
 }
@@ -170,6 +179,7 @@ void AddPlaylist::Update() {
   }
 
   m_titleBox.Update();
+  m_descBox.Update();
 
   // Perilaku tombol sampul saat hover
   if (m_coverBtn.IsHover() && !m_coverHovered) {
@@ -199,9 +209,9 @@ void AddPlaylist::Update() {
   m_addMusicBtn.AddText(addLabel, SpaceB, 18, currentTheme.second1);
 
   // Gulir daftar lagu
-  m_trackListScrollY -= GetMouseWheelMove() * 30.0f;
-  float maxScroll = fmaxf(0.0f, (float)m_tracks.size() * 48.0f - 300.0f);
-  m_trackListScrollY = fmaxf(0.0f, fminf(m_trackListScrollY, maxScroll));
+  m_trackListScrollY -= GetMouseWheelMove() * 30;
+  float maxScroll = fmaxf(0, (float)m_tracks.size() * 48 - 300);
+  m_trackListScrollY = fmaxf(0, fminf(m_trackListScrollY, maxScroll));
 
   // Tombol hapus playlist (hanya dalam Mode Edit)
   if (m_playlistId != -1) {
@@ -209,7 +219,7 @@ void AddPlaylist::Update() {
       AppState::Instance().RemovePlaylist(m_playlistId);
       if (AppState::Instance().activePlaylistId == m_playlistId) {
         AppState::Instance().activePlaylistId = -1;
-        // [CIRCULAR LINKED LIST] Bersihkan antrean pemutaran melingkar
+        // Bersihkan antrean pemutaran melingkar
         AppState::Instance().playQueue.clear();
         AppState::Instance().isPlaying = false;
         Fumbo::Engine::Instance().GetAudioManager().StopMusic(0);
@@ -223,6 +233,7 @@ void AddPlaylist::Update() {
   if (m_saveBtn.IsPressed() && !m_titleBox.GetText().empty()) {
     Playlist pl;
     pl.name = m_titleBox.GetText();
+    pl.description = m_descBox.GetText();
     pl.coverPath = m_coverPath;
     // [LINKED LIST] Konversi vector kembali ke DoublyLinkedList untuk penyimpanan
     for (auto &t : m_tracks)
@@ -239,12 +250,12 @@ void AddPlaylist::Update() {
     Fumbo::Instance().ChangeState(std::make_shared<MainMenu>());
   }
 
-  // Interaksi per baris lagu (Hapus / Pindah)
+  // Interaksi per baris lagu
   float listX = AP_CONTENT_X;
-  float listY = AP_CONTENT_Y + 280.0f;
-  float listW = 1280.0f - listX - 20.0f;
-  float listH = 720.0f - listY - 20.0f;
-  float rowH = 46.0f;
+  float listY = AP_CONTENT_Y + 280;
+  float listW = 1280 - listX - 20;
+  float listH = 720 - listY - 20;
+  float rowH = 46;
   float y = listY - m_trackListScrollY;
 
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -261,12 +272,12 @@ void AddPlaylist::Update() {
           continue;
         }
 
-        // Tombol Naik (▲) di listX + listW - 140
-        Rectangle upRec = {listX + listW - 140.0f, y + 8.0f, 30.0f, 30.0f};
-        // Tombol Turun (▼) di listX + listW - 100
-        Rectangle downRec = {listX + listW - 100.0f, y + 8.0f, 30.0f, 30.0f};
-        // Tombol Hapus (X) di listX + listW - 50
-        Rectangle delRec = {listX + listW - 50.0f, y + 8.0f, 30.0f, 30.0f};
+        // Tombol Naik
+        Rectangle upRec = {listX + listW - 140, y + 8, 30, 30};
+        // Tombol Turun
+        Rectangle downRec = {listX + listW - 100, y + 8, 30, 30};
+        // Tombol Hapus
+        Rectangle delRec = {listX + listW - 50, y + 8, 30, 30};
 
         if (i > 0 && CheckCollisionPointRec(mouseUI, upRec)) {
           std::swap(m_tracks[i], m_tracks[i - 1]);
@@ -305,8 +316,11 @@ void AddPlaylist::DrawDirty() {
 
   m_coverBtn.Draw();
 
-  // Textbox nama playlist
+  // Kotak teks nama playlist
   m_titleBox.Draw();
+
+  // Kotak teks deskripsi playlist
+  m_descBox.Draw();
 
   // Tombol tambah musik
   m_addMusicBtn.Draw();
@@ -322,9 +336,9 @@ void AddPlaylist::DrawDirty() {
 
   // Daftar lagu yang sudah ditambahkan
   float listX = AP_CONTENT_X;
-  float listY = AP_CONTENT_Y + 280.0f;
-  float listW = 1280.0f - listX - 20.0f;
-  float listH = 720.0f - listY - 20.0f;
+  float listY = AP_CONTENT_Y + 280;
+  float listW = 1280 - listX - 20;
+  float listH = 720 - listY - 20;
 
   // Header daftar lagu
   std::string headerText =
@@ -334,7 +348,7 @@ void AddPlaylist::DrawDirty() {
   Fumbo::Graphic2D::DrawText(headerText, {listX, listY}, SpaceB, 16,
                              {130, 135, 150, 255});
 
-  float rowH = 46.0f;
+  float rowH = 46;
   float y = listY - m_trackListScrollY;
 
   for (size_t i = 0; i < m_tracks.size(); ++i) {
@@ -348,7 +362,7 @@ void AddPlaylist::DrawDirty() {
     // Warna baris bergantian
     Color rowBg =
         (i % 2 == 0) ? Color{30, 33, 40, 200} : Color{25, 28, 35, 200};
-    Fumbo::Graphic2D::DrawRectangleRounded({listX, y, listW, rowH - 2}, 0.1f, 6,
+    Fumbo::Graphic2D::DrawRectangleRounded({listX, y, listW, rowH - 2}, 0.1, 6,
                                            rowBg);
 
     // Nomor urut
@@ -372,7 +386,7 @@ void AddPlaylist::DrawDirty() {
                                  {150, 155, 170, 255});
     }
 
-    // Durasi lagu (digeser ke kiri untuk memberi ruang bagi tombol aksi)
+    // Durasi lagu
     if (t.durationMs > 0) {
       int sec = (int)(t.durationMs / 1000);
       int min = sec / 60;
@@ -383,32 +397,32 @@ void AddPlaylist::DrawDirty() {
                                  {130, 135, 150, 255});
     }
 
-    // Tombol Naik (▲)
-    Rectangle upRec = {listX + listW - 140.0f, y + 8.0f, 30.0f, 30.0f};
+    // Tombol Naik
+    Rectangle upRec = {listX + listW - 140, y + 8, 30, 30};
     if (i > 0) {
       bool hoverUp = CheckCollisionPointRec(GetMousePosition(), upRec);
-      Fumbo::Graphic2D::DrawRectangleRounded(upRec, 0.2f, 4,
+      Fumbo::Graphic2D::DrawRectangleRounded(upRec, 0.2, 4,
                                              hoverUp ? Color{80, 160, 255, 100}
                                                      : Color{50, 53, 60, 100});
       Fumbo::Graphic2D::DrawText("▲", {upRec.x + 8, upRec.y + 7}, SpaceB, 14,
                                  WHITE);
     }
 
-    // Tombol Turun (▼)
-    Rectangle downRec = {listX + listW - 100.0f, y + 8.0f, 30.0f, 30.0f};
+    // Tombol Turun
+    Rectangle downRec = {listX + listW - 100, y + 8, 30, 30};
     if (i + 1 < m_tracks.size()) {
       bool hoverDown = CheckCollisionPointRec(GetMousePosition(), downRec);
       Fumbo::Graphic2D::DrawRectangleRounded(
-          downRec, 0.2f, 4,
+          downRec, 0.2, 4,
           hoverDown ? Color{80, 160, 255, 100} : Color{50, 53, 60, 100});
       Fumbo::Graphic2D::DrawText("▼", {downRec.x + 8, downRec.y + 7}, SpaceB,
                                  14, WHITE);
     }
 
-    // Tombol Hapus (X)
-    Rectangle delRec = {listX + listW - 50.0f, y + 8.0f, 30.0f, 30.0f};
+    // Tombol Hapus
+    Rectangle delRec = {listX + listW - 50, y + 8, 30, 30};
     bool hoverDel = CheckCollisionPointRec(GetMousePosition(), delRec);
-    Fumbo::Graphic2D::DrawRectangleRounded(delRec, 0.2f, 4,
+    Fumbo::Graphic2D::DrawRectangleRounded(delRec, 0.2, 4,
                                            hoverDel ? Color{230, 80, 80, 200}
                                                     : Color{80, 40, 40, 100});
     Fumbo::Graphic2D::DrawText("X", {delRec.x + 9, delRec.y + 7}, SpaceB, 14,

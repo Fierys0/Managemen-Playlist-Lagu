@@ -30,7 +30,7 @@ private:
   std::string m_lastQuery;
 
   // Gulir hasil
-  float m_scrollY{0.0f};
+  float m_scrollY{0};
 
   // [HASH MAP] Tekstur sampul dari cache — hanya menyimpan Texture2D yang didapat
   // dari CoverCache, bukan memuat sendiri dari disk.

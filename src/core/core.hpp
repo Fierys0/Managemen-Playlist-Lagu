@@ -40,7 +40,7 @@ private:
   Texture2D m_navSearchTex{};
 
   // Pengingat "pilih playlist dulu" saat Play ditekan tanpa playlist aktif
-  float m_noPlaylistNudgeTimer = 0.0f;
+  float m_noPlaylistNudgeTimer = 0;
 
   MouseTrails mouseTrails;
 };

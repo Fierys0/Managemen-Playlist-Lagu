@@ -8,43 +8,44 @@
 // #include "../core/playlistData.hpp"
 #include "fumbo.hpp"
 #include "playMusic.hpp"
+#include "playlistDetail.hpp"
 #include <memory>
 
 // Area konten dimulai setelah sidebar kiri (70px) dan title bar (60px)
-static constexpr float CONTENT_X = 72.0f;
-static constexpr float CONTENT_Y = 70.0f;
+static constexpr float CONTENT_X = 72;
+static constexpr float CONTENT_Y = 70;
 
 // Tata letak kartu playlist
-static constexpr float CARD_W = 210.0f;
-static constexpr float CARD_H = 270.0f;
-static constexpr float CARD_GAP = 20.0f;
+static constexpr float CARD_W = 210;
+static constexpr float CARD_H = 270;
+static constexpr float CARD_GAP = 20;
 
 void MainMenu::Init()
 {
   m_plusBtn = Fumbo::UI::Button({1200, 650, 56, 56});
   m_plusBtn.ApplyStyle(btnstyle);
-  m_plusBtn.Roundness(0.5f);
+  m_plusBtn.Roundness(0.5);
   m_plusBtn.AddText("+", SpaceB, 48, currentTheme.second1);
 
-  // Initialize page navigation buttons (glassmorphic slide style)
+  // Inisialisasi tombol navigasi halaman gaya slide glassmorphic
   m_leftBtn = Fumbo::UI::Button({CONTENT_X + 10, 290, 44, 80});
   m_leftBtn.ApplyStyle(btnstyle);
-  m_leftBtn.Roundness(0.2f);
+  m_leftBtn.Roundness(0.2);
   m_leftBtn.AddText("<", SpaceB, 28, WHITE);
 
   m_rightBtn = Fumbo::UI::Button({1210, 290, 44, 80});
   m_rightBtn.ApplyStyle(btnstyle);
-  m_rightBtn.Roundness(0.2f);
+  m_rightBtn.Roundness(0.2);
   m_rightBtn.AddText(">", SpaceB, 28, WHITE);
   // 900 mentok kanan
-  m_sortDateBtn = Fumbo::UI::Button({CONTENT_X + 70.0f + 590.0f, CONTENT_Y + 15.0F, 150, 30});
+  m_sortDateBtn = Fumbo::UI::Button({CONTENT_X + 70 + 590, CONTENT_Y + 15, 150, 30});
   m_sortDateBtn.ApplyStyle(btnstyle);
-  m_sortDateBtn.Roundness(0.2f);
+  m_sortDateBtn.Roundness(0.2);
   m_sortDateBtn.AddText(Lang::Get("Urutkan Dari Tgl", "Sort By Date"), SpaceB, 20, currentTheme.second1);
 
-  m_sortNameBtn = Fumbo::UI::Button({CONTENT_X + 70.0f + 750.0f, CONTENT_Y + 15.0F, 150, 30});
+  m_sortNameBtn = Fumbo::UI::Button({CONTENT_X + 70 + 750, CONTENT_Y + 15, 150, 30});
   m_sortNameBtn.ApplyStyle(btnstyle);
-  m_sortNameBtn.Roundness(0.2f);
+  m_sortNameBtn.Roundness(0.2);
   m_sortNameBtn.AddText(Lang::Get("Urutkan Dari Nama", "Sort By Name"), SpaceB, 18, currentTheme.second1);
 
   RebuildCards();
@@ -53,19 +54,19 @@ void MainMenu::Init()
 
 void MainMenu::Cleanup()
 {
-  // [HASH MAP] Tidak perlu UnloadTexture per kartu karena
-  // masa hidup tekstur dikelola oleh CoverCache (hash map).
+  // Tabel hash Tidak perlu membebaskan tekstur per kartu karena
+  // masa hidup tekstur dikelola oleh CoverCache tabel hash
   m_cards.clear();
 }
 
 void MainMenu::RebuildCards()
 {
-  // [HASH MAP] Bersihkan referensi lokal tanpa menghapus tekstur dari cache
+  // Tabel hash Bersihkan referensi lokal tanpa menghapus tekstur dari cache
   m_cards.clear();
 
   auto playlists = AppState::Instance().playlists;
 
-  // sorting
+  // [SORT] Pengurutan daftar playlist menggunakan std::sort
   if (m_sortMode == SortMode::ByDate)
   {
     sort(playlists.begin(), playlists.end(), [](const Playlist &a, const Playlist &b)
@@ -79,9 +80,9 @@ void MainMenu::RebuildCards()
 
   m_lastPlaylistCount = (int)playlists.size();
 
-  float startX = CONTENT_X + 70.0f;
+  float startX = CONTENT_X + 70;
   float startY =
-      CONTENT_Y + 50.0f; // Shifted down to make room for header title
+      CONTENT_Y + 50; // Digeser ke bawah untuk memberi ruang bagi judul header
 
   for (size_t i = 0; i < playlists.size(); ++i)
   {
@@ -93,9 +94,9 @@ void MainMenu::RebuildCards()
     float cardX = startX + col * (CARD_W + CARD_GAP);
     float cardY = startY + row * (CARD_H + CARD_GAP);
 
-    // [HASH MAP] Ambil tekstur sampul dari CoverCache (hash map)
-    // Alih-alih memuat file gambar dari disk setiap kali rebuild,
-    // CoverCache.Get() mengembalikan tekstur dari hash map O(1) jika sudah ada.
+    // Tabel hash Ambil tekstur sampul dari CoverCache tabel hash
+    // Alih alih memuat berkas gambar dari disk setiap kali rekonstruksi kartu
+    // CoverCache mengembalikan tekstur dari tabel hash jika sudah dimuat sebelumnya
     Texture2D tex{};
     bool loaded = false;
 
@@ -107,12 +108,12 @@ void MainMenu::RebuildCards()
     }
     if (!loaded)
     {
-      // [LINKED LIST] Iterasi menggunakan range-for pada DoublyLinkedList
+      // Daftar berantai ganda Iterasi menggunakan range pada DoublyLinkedList
       for (const auto &t : pl.tracks)
       {
         if (!t.coverArtPath.empty())
         {
-          // [HASH MAP] Ambil dari cache — cache hit O(1), cache miss: muat lalu simpan
+          // Tabel hash Ambil dari cache jika ada dan muat jika belum ada
           tex = CoverCache::Instance().Get(t.coverArtPath);
           if (tex.id != 0)
           {
@@ -162,12 +163,12 @@ void MainMenu::Update()
   }
 
   // Animasi transisi halaman
-  if (m_transitionProgress < 1.0f)
+  if (m_transitionProgress < 1)
   {
-    m_transitionProgress += GetFrameTime() * 2.5f;
-    if (m_transitionProgress > 1.0f)
+    m_transitionProgress += GetFrameTime() * 2.5;
+    if (m_transitionProgress > 1)
     {
-      m_transitionProgress = 1.0f;
+      m_transitionProgress = 1;
     }
   }
 
@@ -181,26 +182,26 @@ void MainMenu::Update()
   int totalPlaylists = (int)AppState::Instance().playlists.size();
 
   // Navigasi halaman dengan tombol Left/Right
-  if (m_transitionProgress >= 1.0f)
+  if (m_transitionProgress >= 1)
   {
     if (m_currentPage > 0 && m_leftBtn.IsPressed())
     {
       m_prevPage = m_currentPage;
       m_currentPage--;
-      m_transitionProgress = 0.0f;
+      m_transitionProgress = 0;
       m_transitionDirection = -1;
     }
     if ((m_currentPage + 1) * 8 < totalPlaylists && m_rightBtn.IsPressed())
     {
       m_prevPage = m_currentPage;
       m_currentPage++;
-      m_transitionProgress = 0.0f;
+      m_transitionProgress = 0;
       m_transitionDirection = 1;
     }
   }
 
-  // cek klik pada setiap kartu playlist (jika tidak sedang transisi)
-  if (m_transitionProgress >= 1.0f)
+  // Cek klik pada setiap kartu playlist jika tidak sedang transisi
+  if (m_transitionProgress >= 1)
   {
     for (auto &entry : m_cards)
     {
@@ -217,29 +218,11 @@ void MainMenu::Update()
         continue;
 
       entry.card.Update();
-      if (entry.card.IsEditClicked())
-      {
-        AppCore::currentScreen = AppCore::Screen::Home;
-        Fumbo::Instance().ChangeState(
-            std::make_shared<AddPlaylist>(entry.playlistId));
-        return;
-      }
       if (entry.card.IsClicked())
       {
-        for (const auto &pl : AppState::Instance().playlists)
-        {
-          if (pl.id == entry.playlistId)
-          {
-            // Jika playlist yang ditekan berbeda dengan playlist aktif saat ini
-            if (AppState::Instance().activePlaylistId != pl.id)
-            {
-              AppState::Instance().PlayPlaylist(pl);
-            }
-            AppCore::currentScreen = AppCore::Screen::Play;
-            Fumbo::Instance().ChangeState(std::make_shared<PlayMusic>());
-            return;
-          }
-        }
+        Fumbo::Instance().ChangeState(
+            std::make_shared<PlaylistDetail>(entry.playlistId));
+        return;
       }
     }
   }
@@ -255,7 +238,7 @@ void MainMenu::DrawDirty()
 
   // Header seksi
   Fumbo::Graphic2D::DrawText(Lang::Get("Playlist Kamu", "Your Playlists"),
-                             {CONTENT_X + 70.0f, CONTENT_Y + 15.0f}, SpaceB, 28,
+                             {CONTENT_X + 70, CONTENT_Y + 15}, SpaceB, 28,
                              currentTheme.second1);
 
   // Tombol buat playlist baru
@@ -283,23 +266,23 @@ void MainMenu::DrawDirty()
 
   // Kartu playlist dengan efek animasi geser
   float t = m_transitionProgress;
-  float ease = t * t * (3.0f - 2.0f * t);
+  float ease = t * t * (3 - 2 * t);
 
   for (size_t i = 0; i < m_cards.size(); ++i)
   {
     int p = (int)i / 8;
     if (p == m_currentPage)
     {
-      float offsetX = 0.0f;
-      if (m_transitionProgress < 1.0f)
+      float offsetX = 0;
+      if (m_transitionProgress < 1)
       {
-        offsetX = -m_transitionDirection * 1080.0f * (1.0f - ease);
+        offsetX = -m_transitionDirection * 1080 * (1 - ease);
       }
       m_cards[i].card.Draw(offsetX);
     }
-    else if (p == m_prevPage && m_transitionProgress < 1.0f)
+    else if (p == m_prevPage && m_transitionProgress < 1)
     {
-      float offsetX = -m_transitionDirection * 1080.0f * ease;
+      float offsetX = -m_transitionDirection * 1080 * ease;
       m_cards[i].card.Draw(offsetX);
     }
   }
@@ -310,7 +293,7 @@ void MainMenu::DrawDirty()
     Fumbo::Graphic2D::DrawText(
         Lang::Get("Belum ada playlist, tekan  +  untuk membuat",
                   "No playlists yet, press  +  to create one"),
-        {CONTENT_X + 70.0f, CONTENT_Y + 100.0f}, SpaceB, 20,
+        {CONTENT_X + 70, CONTENT_Y + 100}, SpaceB, 20,
         {120, 125, 140, 255});
   }
 }
