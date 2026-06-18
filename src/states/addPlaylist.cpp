@@ -109,43 +109,66 @@ void AddPlaylist::Cleanup() {
 }
 
 void AddPlaylist::OpenAudioPicker() {
-  auto files = Fumbo::FileDialog::OpenFiles(
+  if (m_audioDialog || m_coverDialog) return;
+
+  m_audioDialog = std::make_unique<Fumbo::FileDialog::OpenFileAsync>(
       "Pilih file audio",
-      {"File Audio (MP3, OGG, WAV, QOA, XM, MOD)",
-       "*.mp3 *.ogg *.wav *.qoa *.xm *.mod"});
-  for (const auto &path : files) {
-    // Jangan tambahkan duplikat
-    bool dup = false;
-    for (const auto &t : m_tracks)
-      if (t.filePath == path) {
-        dup = true;
-        break;
-      }
-    if (!dup) {
-      Track t = VlcMeta::GetTrackInfo(path);
-      m_tracks.push_back(t);
-    }
-  }
+      std::vector<std::string>{"File Audio (MP3, OGG, WAV, QOA, XM, MOD)",
+                               "*.mp3 *.ogg *.wav *.qoa *.xm *.mod"},
+      true);
 }
 
 void AddPlaylist::OpenCoverPicker() {
-  std::string picked = Fumbo::FileDialog::OpenFile(
+  if (m_audioDialog || m_coverDialog) return;
+
+  m_coverDialog = std::make_unique<Fumbo::FileDialog::OpenFileAsync>(
       "Pilih gambar sampul",
-      {"File Gambar", "*.png *.jpg *.jpeg *.bmp *.gif", "Semua file", "*"});
-  if (!picked.empty()) {
-    m_coverPath = picked;
-    if (m_coverTex.id != 0)
-      UnloadTexture(m_coverTex);
-    Image img = LoadImage(m_coverPath.c_str());
-    if (img.data) {
-      m_coverTex = LoadTextureFromImage(img);
-      UnloadImage(img);
-      m_coverBtn.SetTexture(m_coverTex);
-    }
-  }
+      std::vector<std::string>{"File Gambar", "*.png *.jpg *.jpeg *.bmp *.gif",
+                               "Semua file", "*"});
 }
 
 void AddPlaylist::Update() {
+  if (m_coverDialog) {
+    if (m_coverDialog->IsReady()) {
+      auto results = m_coverDialog->GetResult();
+      std::string picked = results.empty() ? "" : results[0];
+      if (!picked.empty()) {
+        m_coverPath = picked;
+        if (m_coverTex.id != 0)
+          UnloadTexture(m_coverTex);
+        Image img = LoadImage(m_coverPath.c_str());
+        if (img.data) {
+          m_coverTex = LoadTextureFromImage(img);
+          UnloadImage(img);
+          m_coverBtn.SetTexture(m_coverTex);
+        }
+      }
+      m_coverDialog.reset();
+    }
+    return;
+  }
+
+  if (m_audioDialog) {
+    if (m_audioDialog->IsReady()) {
+      auto files = m_audioDialog->GetResult();
+      for (const auto &path : files) {
+        // Jangan tambahkan duplikat
+        bool dup = false;
+        for (const auto &t : m_tracks)
+          if (t.filePath == path) {
+            dup = true;
+            break;
+          }
+        if (!dup) {
+          Track t = VlcMeta::GetTrackInfo(path);
+          m_tracks.push_back(t);
+        }
+      }
+      m_audioDialog.reset();
+    }
+    return;
+  }
+
   m_titleBox.Update();
 
   // Perilaku tombol sampul saat hover

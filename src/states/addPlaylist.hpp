@@ -7,10 +7,6 @@
 #include <string>
 #include <vector>
 
-// Forward-declare pfd so we don't pull the whole header into every TU
-namespace pfd {
-class open_file;
-}
 
 class AddPlaylist : public IGameState {
 public:
@@ -38,9 +34,9 @@ private:
   std::string m_coverPath{};
   bool m_coverHovered{false};
 
-  // Async file dialog (pfd is blocking but we run it synchronously)
-  bool m_dialogPending{false};
-  bool m_coverDialogPending{false};
+  // Async file dialogs
+  std::unique_ptr<Fumbo::FileDialog::OpenFileAsync> m_audioDialog;
+  std::unique_ptr<Fumbo::FileDialog::OpenFileAsync> m_coverDialog;
 
   // Scroll for track list
   float m_trackListScrollY{0.0f};
