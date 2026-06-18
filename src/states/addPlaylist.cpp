@@ -72,7 +72,8 @@ void AddPlaylist::Init() {
     if (found) {
       m_titleBox.SetText(found->name);
       m_coverPath = found->coverPath;
-      m_tracks = found->tracks;
+      // [LINKED LIST] Konversi DoublyLinkedList ke vector untuk diedit di UI
+      m_tracks = found->tracks.toVector();
 
       if (!m_coverPath.empty()) {
         FILE *f = fopen(m_coverPath.c_str(), "rb");
@@ -185,8 +186,8 @@ void AddPlaylist::Update() {
       AppState::Instance().RemovePlaylist(m_playlistId);
       if (AppState::Instance().activePlaylistId == m_playlistId) {
         AppState::Instance().activePlaylistId = -1;
-        AppState::Instance().queue.clear();
-        AppState::Instance().currentQueueIndex = -1;
+        // [CIRCULAR LINKED LIST] Bersihkan antrean pemutaran melingkar
+        AppState::Instance().playQueue.clear();
         AppState::Instance().isPlaying = false;
         Fumbo::Engine::Instance().GetAudioManager().StopMusic(0);
       }
@@ -200,7 +201,9 @@ void AddPlaylist::Update() {
     Playlist pl;
     pl.name = m_titleBox.GetText();
     pl.coverPath = m_coverPath;
-    pl.tracks = m_tracks;
+    // [LINKED LIST] Konversi vector kembali ke DoublyLinkedList untuk penyimpanan
+    for (auto &t : m_tracks)
+      pl.tracks.pushBack(std::move(t));
     if (m_playlistId != -1) {
       AppState::Instance().UpdatePlaylist(m_playlistId, std::move(pl));
     } else {

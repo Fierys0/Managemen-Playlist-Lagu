@@ -32,12 +32,10 @@ private:
   // Gulir hasil
   float m_scrollY{0.0f};
 
-  // Tekstur sampul untuk setiap hasil (parallel dengan m_filteredIndices)
+  // [HASH MAP] Tekstur sampul dari cache — hanya menyimpan Texture2D yang didapat
+  // dari CoverCache, bukan memuat sendiri dari disk.
   std::vector<Texture2D> m_resultCovers;
 
   // Bangun ulang m_filteredIndices berdasarkan kueri saat ini
   void RebuildResults();
-
-  // Bebaskan semua tekstur sampul hasil
-  void UnloadResultCovers();
 };

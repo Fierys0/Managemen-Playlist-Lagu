@@ -28,4 +28,5 @@ private:
   int m_playlistId{-1};
   int m_trackCount{0};
   Fumbo::UI::Button m_editBtn{};
+  int m_lastThemeId{-1};
 };

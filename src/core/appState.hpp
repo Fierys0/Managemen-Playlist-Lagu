@@ -1,7 +1,9 @@
 #pragma once
+#include "dataStructures.hpp"
 #include "playlistData.hpp"
 #include <algorithm>
-#include <deque>
+#include <queue>
+#include <stack>
 #include <string>
 #include <vector>
 
@@ -33,14 +35,12 @@ public:
 
         // Jika playlist yang diupdate sedang aktif diputar, perbarui antrean
         if (activePlaylistId == id) {
-          queue.clear();
+          // [CIRCULAR LINKED LIST] Bangun ulang antrean melingkar dari tracks
+          playQueue.clear();
           for (const auto &t : p.tracks)
-            queue.push_back(t);
-          if (queue.empty()) {
-            currentQueueIndex = -1;
+            playQueue.pushBack(t);
+          if (playQueue.empty()) {
             isPlaying = false;
-          } else if (currentQueueIndex >= (int)queue.size()) {
-            currentQueueIndex = 0;
           }
         }
         break;
@@ -59,26 +59,54 @@ public:
 
   // Status pemutaran aktif
   int activePlaylistId{-1}; // -1 berarti tidak ada
-  std::deque<Track> queue{};
-  int currentQueueIndex{-1};
+
+  // [CIRCULAR LINKED LIST] Antrean pemutaran lagu menggunakan senarai melingkar
+  // Menggantikan std::deque<Track> + currentQueueIndex.
+  // Node terakhir menunjuk ke node pertama, sehingga navigasi Next/Prev
+  // secara otomatis berputar tanpa perlu pengecekan batas indeks.
+  CircularLinkedList<Track> playQueue{};
+
+  // [STACK] Riwayat pemutaran lagu menggunakan Stack (LIFO)
+  // Setiap kali lagu berpindah ke lagu berikutnya, lagu yang baru saja diputar
+  // di-push ke stack ini. Saat tombol Prev ditekan, lagu teratas di-pop
+  // untuk kembali ke lagu yang benar-benar baru didengar.
+  std::stack<Track> playbackHistory{};
+
+  // [QUEUE] Antrean prioritas "Play Next" menggunakan Queue (FIFO)
+  // Pengguna dapat menambahkan lagu ke antrean ini agar diputar setelah lagu
+  // saat ini selesai. Lagu di antrean ini diambil terlebih dahulu (FIFO)
+  // sebelum berpindah ke lagu berikutnya di playQueue.
+  std::queue<Track> customNextQueue{};
+
   bool isPlaying{false};
 
   bool HasActivePlaylist() const {
-    return activePlaylistId >= 0 && !queue.empty();
+    return activePlaylistId >= 0 && !playQueue.empty();
   }
 
   // Isi antrean dari playlist dan mulai dari lagu pertama.
   void PlayPlaylist(const Playlist &pl);
 
-  // Kembalikan lagu saat ini atau nullptr.
-  const Track *CurrentTrack() const {
-    if (currentQueueIndex < 0 || currentQueueIndex >= (int)queue.size())
-      return nullptr;
-    return &queue[currentQueueIndex];
-  }
+  // [CIRCULAR LINKED LIST] Kembalikan lagu saat ini dari senarai melingkar
+  const Track *CurrentTrack() const { return playQueue.getCurrent(); }
 
   void NextTrack();
   void PrevTrack();
+
+  // [QUEUE] Tambahkan lagu ke antrean prioritas "Play Next"
+  void AddToNextQueue(const Track &t) { customNextQueue.push(t); }
+
+  // [STACK] Bersihkan riwayat pemutaran
+  void ClearPlaybackHistory() {
+    while (!playbackHistory.empty())
+      playbackHistory.pop();
+  }
+
+  // [CIRCULAR LINKED LIST] Hitung posisi current relatif terhadap head
+  int GetCurrentQueueIndex() const { return playQueue.getCurrentIndex(); }
+
+  // [CIRCULAR LINKED LIST] Kembalikan ukuran antrean pemutaran
+  int GetQueueSize() const { return playQueue.size(); }
 
   // Playback state variables
   std::string loadedTrackPath{""};

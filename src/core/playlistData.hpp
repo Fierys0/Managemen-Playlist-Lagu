@@ -1,4 +1,5 @@
 #pragma once
+#include "dataStructures.hpp"
 #include <string>
 #include <vector>
 
@@ -16,5 +17,9 @@ struct Playlist {
   std::string name{};
   std::string coverPath{}; // Path gambar sampul playlist (opsional)
   std::string description{};
-  std::vector<Track> tracks{};
+
+  // [LINKED LIST] Daftar lagu disimpan menggunakan Doubly Linked List
+  // Menggantikan std::vector<Track> untuk efisiensi penyisipan dan penghapusan O(1).
+  // Setiap node Track terhubung ke node sebelumnya (prev) dan berikutnya (next).
+  DoublyLinkedList<Track> tracks{};
 };

@@ -31,7 +31,11 @@ private:
   Texture2D m_nextIcon{};
   Texture2D m_prevIcon{};
 
-  int m_loadedQueueIndex{-1};
+  // [CIRCULAR LINKED LIST] Deteksi perubahan lagu menggunakan pointer ke Track
+  // Alih-alih menyimpan indeks (yang tidak lagi relevan dengan circular list),
+  // kita simpan pointer ke Track yang sedang ditampilkan untuk mendeteksi
+  // kapan lagu berubah dan perlu dimuat ulang.
+  const Track *m_loadedTrackPtr{nullptr};
 
   // Cached track info for display
   std::string m_displayTitle{};

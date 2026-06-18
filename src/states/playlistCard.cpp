@@ -7,20 +7,26 @@
 PlaylistCard::PlaylistCard(Rectangle bounds, const Playlist &pl,
                            Texture2D coverTex)
     : m_bounds(bounds), m_image(coverTex), m_title(pl.name),
-      m_playlistId(pl.id), m_trackCount((int)pl.tracks.size()) {
+      // [LINKED LIST] Mengambil jumlah lagu dari DoublyLinkedList::size()
+      m_playlistId(pl.id), m_trackCount(pl.tracks.size()),
+      m_lastThemeId(currentTheme.id) {
   Rectangle editRec = {m_bounds.x + m_bounds.width - 60,
                        m_bounds.y + m_bounds.height - 38, 50, 26};
   m_editBtn = Fumbo::UI::Button(editRec);
   m_editBtn.ApplyStyle(btnstyle);
   m_editBtn.Roundness(0.2f);
-  m_editBtn.IdleColor(currentTheme.prim1);
-  m_editBtn.HoveredColor(currentTheme.second2);
-  m_editBtn.SetButtonColor(WHITE);
-  m_editBtn.AddText(Lang::Get("Ubah", "Edit"), SpaceB, 13, currentTheme.second1);
+  m_editBtn.SetButtonColor(currentTheme.prim1);
+  m_editBtn.AddText(Lang::Get("Ubah", "Edit"), SpaceB, 13, currentTheme.second2);
 }
 
 void PlaylistCard::Update() {
   m_editBtn.IsHover(); // Trigger auto-update since Update() is private
+
+  if (m_lastThemeId != currentTheme.id) {
+    m_lastThemeId = currentTheme.id;
+    m_editBtn.SetButtonColor(currentTheme.prim1);
+    m_editBtn.AddText(Lang::Get("Ubah", "Edit"), SpaceB, 13, currentTheme.second2);
+  }
 }
 
 void PlaylistCard::Draw(float offsetX) {
@@ -80,9 +86,7 @@ void PlaylistCard::Draw(float offsetX) {
   }
 }
 
-bool PlaylistCard::IsEditClicked() const {
-  return m_editBtn.IsPressed();
-}
+bool PlaylistCard::IsEditClicked() const { return m_editBtn.IsPressed(); }
 
 bool PlaylistCard::IsClicked() const {
   Rectangle screenBounds = Fumbo::Utils::UISpaceToScreen(m_bounds);
