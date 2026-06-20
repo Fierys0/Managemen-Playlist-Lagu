@@ -10,24 +10,24 @@
 #include <string>
 
 // Konstanta tata letak layar pemutaran musik
-static constexpr float PM_CONTENT_X = 90.0f;
-static constexpr float PM_CONTENT_Y = 75.0f;
-static constexpr float COVER_SIZE = 280.0f;
-static constexpr float COVER_X = 490.0f;
-static constexpr float COVER_Y = 110.0f;
+static constexpr float PM_CONTENT_X = 90;
+static constexpr float PM_CONTENT_Y = 75;
+static constexpr float COVER_SIZE = 280;
+static constexpr float COVER_X = 490;
+static constexpr float COVER_Y = 110;
 
 // Baris kontrol pemutaran
-static constexpr float CTRL_Y = 480.0f;
-static constexpr float CTRL_BTN_W = 70.0f;
-static constexpr float CTRL_BTN_H = 70.0f;
-static constexpr float CTRL_CENTER_X = 640.0f;
+static constexpr float CTRL_Y = 480;
+static constexpr float CTRL_BTN_W = 70;
+static constexpr float CTRL_BTN_H = 70;
+static constexpr float CTRL_CENTER_X = 640;
 
 // Posisi bilah progres
-static constexpr float PROG_Y = 565.0f;
-static constexpr float PROG_H = 6.0f;
+static constexpr float PROG_Y = 565;
+static constexpr float PROG_H = 6;
 
 // Jumlah detik untuk maju/mundur saat menekan tombol panah
-static constexpr float SEEK_STEP_SECONDS = 5.0f;
+static constexpr float SEEK_STEP_SECONDS = 5;
 
 // Format detik menjadi string menit:detik
 static std::string FormatTime(float seconds) {
@@ -66,20 +66,20 @@ void PlayMusic::Init() {
   m_prevBtn =
       Fumbo::UI::Button({CTRL_CENTER_X - 130, CTRL_Y, CTRL_BTN_W, CTRL_BTN_H});
   m_prevBtn.ApplyStyle(btnstyle);
-  m_prevBtn.Roundness(0.5f);
+  m_prevBtn.Roundness(0.5);
   m_prevBtn.SetTexture(m_prevIcon);
 
   // Tombol putar atau jeda dengan ukuran lebih besar
   m_playPauseBtn = Fumbo::UI::Button({CTRL_CENTER_X - 40, CTRL_Y - 10, 80, 80});
   m_playPauseBtn.ApplyStyle(btnstyle);
-  m_playPauseBtn.Roundness(0.5f);
+  m_playPauseBtn.Roundness(0.5);
   m_playPauseBtn.SetTexture(state.isPlaying ? m_pauseIcon : m_playIcon);
 
   // Tombol lagu berikutnya
   m_nextBtn =
       Fumbo::UI::Button({CTRL_CENTER_X + 60, CTRL_Y, CTRL_BTN_W, CTRL_BTN_H});
   m_nextBtn.ApplyStyle(btnstyle);
-  m_nextBtn.Roundness(0.5f);
+  m_nextBtn.Roundness(0.5);
   m_nextBtn.SetTexture(m_nextIcon);
 
   // Konfigurasi slider progres
@@ -87,9 +87,9 @@ void PlayMusic::Init() {
   sliderCfg.trackColor = currentTheme.prim2;
   sliderCfg.progressColor = currentTheme.second2;
   sliderCfg.knobColor = WHITE;
-  sliderCfg.knobWidth = 14.0f;
+  sliderCfg.knobWidth = 14;
   sliderCfg.trackHeight = PROG_H;
-  m_progressSlider = Fumbo::UI::Slider(0.0f, 1.0f, 0.0f);
+  m_progressSlider = Fumbo::UI::Slider(0, 1, 0);
   m_progressSlider.SetStyle(sliderCfg);
 
   // Konfigurasi slider volume
@@ -97,9 +97,9 @@ void PlayMusic::Init() {
   volSliderCfg.trackColor = currentTheme.prim2;
   volSliderCfg.progressColor = currentTheme.second2;
   volSliderCfg.knobColor = WHITE;
-  volSliderCfg.knobWidth = 10.0f;
-  volSliderCfg.trackHeight = 4.0f;
-  m_volumeSlider = Fumbo::UI::Slider(0.0f, 1.0f, audio.GetChannelVolume(0));
+  volSliderCfg.knobWidth = 10;
+  volSliderCfg.trackHeight = 4;
+  m_volumeSlider = Fumbo::UI::Slider(0, 1, audio.GetChannelVolume(0));
   m_volumeSlider.SetStyle(volSliderCfg);
 
   // Muat lagu yang sedang aktif
@@ -156,7 +156,7 @@ void PlayMusic::LoadCurrentTrack() {
                         ? Lang::Get("Artis Tidak Diketahui", "Unknown Artist")
                         : t->artist;
   m_displayAlbum = t->album;
-  m_coverAngle = 0.0f;
+  m_coverAngle = 0;
 
   // Warna aksen mengikuti tema saat ini
   m_accentColor = currentTheme.second2;
@@ -167,7 +167,7 @@ void PlayMusic::Update() {
   auto &audio = Fumbo::Engine::Instance().GetAudioManager();
 
   // [CIRCULAR LINKED LIST] Muat ulang jika lagu saat ini berubah dari luar
-  // Perbandingan menggunakan pointer alih-alih indeks karena circular list
+  // Perbandingan menggunakan pointer alih alih indeks karena senarai melingkar
   if (state.CurrentTrack() != m_loadedTrackPtr)
     LoadCurrentTrack();
 
@@ -210,17 +210,17 @@ void PlayMusic::Update() {
     float currentPos = audio.GetMusicPlayed(0);
     float newPos = currentPos - SEEK_STEP_SECONDS;
     // Pastikan posisi baru tidak kurang dari 0
-    if (newPos < 0.0f)
-      newPos = 0.0f;
+    if (newPos < 0)
+      newPos = 0;
     audio.SeekMusic(newPos, 0);
   }
 
   // Perbarui jangkauan dan nilai slider
   float totalLength = audio.GetMusicLength(0);
-  m_progressSlider.SetRange(0.0f, totalLength > 0.0f ? totalLength : 1.0f);
+  m_progressSlider.SetRange(0, totalLength > 0 ? totalLength : 1);
 
-  float progW = 700.0f;
-  float progX = (1280.0f - progW) * 0.5f;
+  float progW = 700;
+  float progX = (1280 - progW) * 0.5;
 
   // Jika mouse tidak menekan layar perbarui nilai slider dari posisi lagu
   if (!IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
@@ -232,10 +232,10 @@ void PlayMusic::Update() {
     audio.SeekMusic(m_progressSlider.GetValue(), 0);
   }
 
-  float volW = 120.0f;
-  float volX = CTRL_CENTER_X + 190.0f;
-  float volY = CTRL_Y + 26.0f;
-  float volH = 8.0f;
+  float volW = 120;
+  float volX = CTRL_CENTER_X + 190;
+  float volY = CTRL_Y + 26;
+  float volH = 8;
 
   // Perbarui deteksi geser slider volume dan perbarui volume audio
   if (m_volumeSlider.Update({volX, volY, volW, volH})) {
@@ -244,7 +244,7 @@ void PlayMusic::Update() {
 
   // Animasi rotasi sampul saat memutar
   if (state.isPlaying)
-    m_coverAngle += GetFrameTime() * 15.0f;
+    m_coverAngle += GetFrameTime() * 15;
 }
 
 void PlayMusic::DrawDirty() {
@@ -265,19 +265,19 @@ void PlayMusic::DrawDirty() {
       {currentTheme.prim1.r, currentTheme.prim1.g, currentTheme.prim1.b, 0});
 
   // Efek cahaya melingkar di sekitar sampul
-  float glowR = COVER_SIZE * 0.5f + 18.0f;
-  float cx = COVER_X + COVER_SIZE * 0.5f;
-  float cy = COVER_Y + COVER_SIZE * 0.5f;
+  float glowR = COVER_SIZE * 0.5 + 18;
+  float cx = COVER_X + COVER_SIZE * 0.5;
+  float cy = COVER_Y + COVER_SIZE * 0.5;
   if (state.isPlaying) {
-    float pulse = 0.5f + 0.5f * sinf(GetTime() * 2.0f);
+    float pulse = 0.5 + 0.5 * sinf(GetTime() * 2);
     Color gc = {m_accentColor.r, m_accentColor.g, m_accentColor.b,
                 (unsigned char)(60 + (int)(40 * pulse))};
-    Fumbo::Graphic2D::DrawCircleV({cx, cy}, glowR + pulse * 8.0f, gc);
+    Fumbo::Graphic2D::DrawCircleV({cx, cy}, glowR + pulse * 8, gc);
   }
 
   // Bingkai sampul
   Fumbo::Graphic2D::DrawRectangleRounded(
-      {COVER_X - 4, COVER_Y - 4, COVER_SIZE + 8, COVER_SIZE + 8}, 0.08f, 8,
+      {COVER_X - 4, COVER_Y - 4, COVER_SIZE + 8, COVER_SIZE + 8}, 0.08, 8,
       {m_accentColor.r, m_accentColor.g, m_accentColor.b, 60});
 
   // Gambar sampul atau placeholder
@@ -294,7 +294,7 @@ void PlayMusic::DrawDirty() {
 
   // Informasi lagu
   float infoX = PM_CONTENT_X;
-  float infoY = COVER_Y + COVER_SIZE + 20.0f;
+  float infoY = COVER_Y + COVER_SIZE + 20;
 
   Fumbo::Graphic2D::DrawText(m_displayTitle, {infoX + 10, infoY}, SpaceB, 32,
                              currentTheme.second1);
@@ -306,8 +306,7 @@ void PlayMusic::DrawDirty() {
 
   // [CIRCULAR LINKED LIST] Info antrean dan daftar lagu berikutnya
   if (!state.playQueue.empty()) {
-    // [CIRCULAR LINKED LIST] Tampilkan posisi saat ini di dalam senarai
-    // melingkar
+    // [CIRCULAR LINKED LIST] Tampilkan posisi saat ini di dalam senarai melingkar
     std::string qInfo = Lang::Get("Lagu ", "Song ") +
                         std::to_string(state.GetCurrentQueueIndex() + 1) + " " +
                         Lang::Get("dari ", "of ") +
@@ -316,10 +315,10 @@ void PlayMusic::DrawDirty() {
                                SpaceB, 16, {110, 115, 135, 255});
 
     // [CIRCULAR LINKED LIST] Daftar lagu yang akan diputar berikutnya
-    // Menggunakan getNextN() yang memanfaatkan sifat melingkar dari senarai:
-    // setelah lagu terakhir, daftar akan menampilkan lagu pertama dan
-    // seterusnya.
-    float qy = COVER_Y + 30.0f;
+    // Menggunakan getNextN yang memanfaatkan sifat melingkar dari senarai
+    // setelah lagu terakhir daftar akan menampilkan lagu pertama dan
+    // seterusnya
+    float qy = COVER_Y + 30;
     Fumbo::Graphic2D::DrawText(Lang::Get("Selanjutnya:", "Next Up:"),
                                {COVER_X + COVER_SIZE + 20, qy}, SpaceB, 18,
                                {130, 135, 155, 255});
@@ -340,9 +339,9 @@ void PlayMusic::DrawDirty() {
   }
 
   // Bilah progres background
-  float progW = 700.0f;
-  float progX = (1280.0f - progW) * 0.5f;
-  Fumbo::Graphic2D::DrawRectangleRounded({progX, PROG_Y, progW, PROG_H}, 1.0f,
+  float progW = 700;
+  float progX = (1280 - progW) * 0.5;
+  Fumbo::Graphic2D::DrawRectangleRounded({progX, PROG_Y, progW, PROG_H}, 1,
                                          4, currentTheme.prim2);
 
   // Widget slider progres
@@ -371,7 +370,7 @@ void PlayMusic::DrawDirty() {
   // Label volume dan slider volume
   Fumbo::Graphic2D::DrawText("VOL", {CTRL_CENTER_X + 150, CTRL_Y + 22}, SpaceB,
                              14, {100, 105, 120, 255});
-  m_volumeSlider.Draw({CTRL_CENTER_X + 190.0f, CTRL_Y + 26.0f, 120.0f, 8.0f});
+  m_volumeSlider.Draw({CTRL_CENTER_X + 190, CTRL_Y + 26, 120, 8});
 }
 
 void PlayMusic::DrawClean() {}

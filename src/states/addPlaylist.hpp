@@ -7,10 +7,6 @@
 #include <string>
 #include <vector>
 
-// Forward-declare pfd so we don't pull the whole header into every TU
-namespace pfd {
-class open_file;
-}
 
 class AddPlaylist : public IGameState {
 public:
@@ -22,28 +18,29 @@ public:
   void DrawDirty() override;
 
 private:
-  // UI
+  // Antarmuka pengguna
   Fumbo::UI::Button m_coverBtn;
   Fumbo::UI::Button m_addMusicBtn;
   Fumbo::UI::Button m_saveBtn;
   Fumbo::UI::Button m_backBtn;
-  Fumbo::UI::Button m_deleteBtn; // Hanya tampil saat mengedit
+  Fumbo::UI::Button m_deleteBtn; // Hanya tampil saat mengubah
   Fumbo::UI::Textbox m_titleBox;
+  Fumbo::UI::Textbox m_descBox;
   Fumbo::UI::TextboxConfig m_tbConfig;
 
-  // State
+  // Keadaan
   int m_playlistId{-1};
   std::vector<Track> m_tracks;
-  Texture2D m_coverTex{}; // custom cover (from picker)
+  Texture2D m_coverTex{}; // Sampul kustom dari pemilih
   std::string m_coverPath{};
   bool m_coverHovered{false};
 
-  // Async file dialog (pfd is blocking but we run it synchronously)
-  bool m_dialogPending{false};
-  bool m_coverDialogPending{false};
+  // Dialog berkas asinkron
+  std::unique_ptr<Fumbo::FileDialog::OpenFileAsync> m_audioDialog;
+  std::unique_ptr<Fumbo::FileDialog::OpenFileAsync> m_coverDialog;
 
-  // Scroll for track list
-  float m_trackListScrollY{0.0f};
+  // Pengguliran untuk daftar lagu
+  float m_trackListScrollY{0};
 
   void OpenAudioPicker();
   void OpenCoverPicker();

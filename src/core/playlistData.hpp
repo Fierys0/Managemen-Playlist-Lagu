@@ -18,8 +18,8 @@ struct Playlist {
   std::string coverPath{}; // Path gambar sampul playlist (opsional)
   std::string description{};
 
-  // [LINKED LIST] Daftar lagu disimpan menggunakan Doubly Linked List
-  // Menggantikan std::vector<Track> untuk efisiensi penyisipan dan penghapusan O(1).
-  // Setiap node Track terhubung ke node sebelumnya (prev) dan berikutnya (next).
+  // [LINKED LIST] Daftar lagu disimpan menggunakan DoublyLinkedList atau daftar berantai ganda
+  // Menggantikan std::vector untuk efisiensi penyisipan dan penghapusan O 1
+  // Setiap node Track terhubung ke node sebelumnya dan berikutnya
   DoublyLinkedList<Track> tracks{};
 };

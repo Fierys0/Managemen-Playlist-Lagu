@@ -6,6 +6,7 @@
 #include "fumbo.hpp"
 #include "mainMenu.hpp"
 #include "playMusic.hpp"
+#include "playlistDetail.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -13,27 +14,27 @@
 #include <string>
 
 // Tata letak layar pencarian.
-static constexpr float SS_SIDEBAR_W = 72.0f;
-static constexpr float SS_TITLEBAR_H = 60.0f;
-static constexpr float SS_PADDING = 24.0f;
+static constexpr float SS_SIDEBAR_W = 72;
+static constexpr float SS_TITLEBAR_H = 60;
+static constexpr float SS_PADDING = 24;
 
 // Dimensi kotak pencarian
 static constexpr float SS_SEARCH_X = SS_SIDEBAR_W + SS_PADDING;
 static constexpr float SS_SEARCH_Y = SS_TITLEBAR_H + SS_PADDING;
-static constexpr float SS_SEARCH_W = 1280.0f - SS_SIDEBAR_W - SS_PADDING * 2.0f;
-static constexpr float SS_SEARCH_H = 56.0f;
+static constexpr float SS_SEARCH_W = 1280 - SS_SIDEBAR_W - SS_PADDING * 2;
+static constexpr float SS_SEARCH_H = 56;
 
 // Area hasil pencarian
 static constexpr float SS_RESULTS_X = SS_SIDEBAR_W + SS_PADDING;
-static constexpr float SS_RESULTS_Y = SS_SEARCH_Y + SS_SEARCH_H + 20.0f;
+static constexpr float SS_RESULTS_Y = SS_SEARCH_Y + SS_SEARCH_H + 20;
 static constexpr float SS_RESULTS_W =
-    1280.0f - SS_SIDEBAR_W - SS_PADDING * 2.0f;
-static constexpr float SS_RESULTS_H = 720.0f - SS_RESULTS_Y - SS_PADDING;
+    1280 - SS_SIDEBAR_W - SS_PADDING * 2;
+static constexpr float SS_RESULTS_H = 720 - SS_RESULTS_Y - SS_PADDING;
 
 // Ukuran tiap baris hasil
-static constexpr float SS_ROW_H = 76.0f;
-static constexpr float SS_COVER_SZ = 56.0f;
-static constexpr float SS_ROW_GAP = 4.0f;
+static constexpr float SS_ROW_H = 76;
+static constexpr float SS_COVER_SZ = 56;
+static constexpr float SS_ROW_GAP = 4;
 
 // Fungsi bantu mengubah string ke huruf kecil untuk pencocokan tanpa
 // memperhatikan kapitalisasi.
@@ -48,7 +49,7 @@ void SearchScreen::Init() {
   AppCore::currentScreen = AppCore::Screen::Search;
 
   // Konfigurasi kotak teks
-  m_tbConfig.cornerRoundness = 0.4f;
+  m_tbConfig.cornerRoundness = 0.4;
   m_tbConfig.padding = {16, 10};
   m_tbConfig.backgroundColor = {currentTheme.prim2.r, currentTheme.prim2.g,
                                 currentTheme.prim2.b, 230};
@@ -59,15 +60,15 @@ void SearchScreen::Init() {
   m_tbConfig.cursorColor = currentTheme.second2;
 
   m_searchBox = Fumbo::UI::Textbox(
-      {SS_SEARCH_X, SS_SEARCH_Y, SS_SEARCH_W - 70.0f, SS_SEARCH_H}, SpaceB, 26);
+      {SS_SEARCH_X, SS_SEARCH_Y, SS_SEARCH_W - 70, SS_SEARCH_H}, SpaceB, 26);
   m_searchBox.SetStyle(m_tbConfig);
   m_searchBox.SetText("");
 
   // Tombol hapus (×) di sebelah kanan kotak pencarian
   m_clearBtn = Fumbo::UI::Button(
-      {SS_SEARCH_X + SS_SEARCH_W - 62.0f, SS_SEARCH_Y, 56.0f, SS_SEARCH_H});
+      {SS_SEARCH_X + SS_SEARCH_W - 62, SS_SEARCH_Y, 56, SS_SEARCH_H});
   m_clearBtn.ApplyStyle(btnstyle);
-  m_clearBtn.Roundness(0.4f);
+  m_clearBtn.Roundness(0.4);
   m_clearBtn.AddText("X", SpaceB, 30, {200, 80, 80, 255});
 
   RebuildResults();
@@ -84,11 +85,12 @@ void SearchScreen::RebuildResults() {
   // [HASH MAP] Bersihkan referensi lokal tanpa menghapus tekstur dari cache
   m_resultCovers.clear();
   m_filteredIndices.clear();
-  m_scrollY = 0.0f;
+  m_scrollY = 0;
 
   const std::string query = toLower(m_searchBox.GetText());
   const auto &playlists = AppState::Instance().playlists;
 
+  // [SEARCH] Pencarian linear mencocokkan nama playlist dengan kueri pencarian
   for (int i = 0; i < (int)playlists.size(); ++i) {
     const auto &pl = playlists[i];
     // Tampilkan semua playlist jika kueri kosong, atau yang namanya cocok
@@ -112,7 +114,8 @@ void SearchScreen::RebuildResults() {
 
       // [HASH MAP] Coba dari coverArtPath lagu pertama yang punya cover
       if (!loaded) {
-        // [LINKED LIST] Iterasi menggunakan range-for pada DoublyLinkedList
+        // [LINKED LIST] Iterasi menggunakan range pada DoublyLinkedList daftar
+        // berantai ganda
         for (const auto &t : pl.tracks) {
           if (!t.coverArtPath.empty()) {
             tex = CoverCache::Instance().Get(t.coverArtPath);
@@ -150,10 +153,10 @@ void SearchScreen::Update() {
   }
 
   // Gulir daftar hasil
-  m_scrollY -= GetMouseWheelMove() * 36.0f;
+  m_scrollY -= GetMouseWheelMove() * 36;
   float totalRowH = (float)m_filteredIndices.size() * (SS_ROW_H + SS_ROW_GAP);
-  float maxScroll = std::max(0.0f, totalRowH - SS_RESULTS_H);
-  m_scrollY = std::max(0.0f, std::min(m_scrollY, maxScroll));
+  float maxScroll = fmaxf(0, totalRowH - SS_RESULTS_H);
+  m_scrollY = fmaxf(0, fminf(m_scrollY, maxScroll));
 
   // Deteksi klik pada baris hasil
   if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -174,10 +177,8 @@ void SearchScreen::Update() {
       if (CheckCollisionPointRec(mouseUI, rowRec)) {
         int plIdx = m_filteredIndices[ri];
         const auto &pl = AppState::Instance().playlists[plIdx];
-        if (AppState::Instance().activePlaylistId != pl.id)
-          AppState::Instance().PlayPlaylist(pl);
-        AppCore::currentScreen = AppCore::Screen::Play;
-        Fumbo::Instance().ChangeState(std::make_shared<PlayMusic>());
+        Fumbo::Instance().ChangeState(
+            std::make_shared<PlaylistDetail>(pl.id));
         return;
       }
     }
@@ -199,15 +200,15 @@ void SearchScreen::DrawDirty() {
 
   // Label kecil di atas kotak pencarian.
   Fumbo::Graphic2D::DrawText(Lang::Get("Cari Playlist", "Search Playlists"),
-                             {SS_SEARCH_X, SS_TITLEBAR_H + 6.0f}, SpaceB, 16,
+                             {SS_SEARCH_X, SS_TITLEBAR_H + 6}, SpaceB, 16,
                              {currentTheme.second1.r, currentTheme.second1.g,
                               currentTheme.second1.b, 160});
 
   // Gambar kotak pencarian beserta bayangan di belakangnya.
   // Bayangan halus di belakang kotak
   Fumbo::Graphic2D::DrawRectangleRounded(
-      {SS_SEARCH_X - 2, SS_SEARCH_Y - 2, SS_SEARCH_W - 66.0f, SS_SEARCH_H + 4},
-      0.4f, 8,
+      {SS_SEARCH_X - 2, SS_SEARCH_Y - 2, SS_SEARCH_W - 66, SS_SEARCH_H + 4},
+      0.4, 8,
       {currentTheme.second2.r, currentTheme.second2.g, currentTheme.second2.b,
        30});
 
@@ -218,7 +219,7 @@ void SearchScreen::DrawDirty() {
   if (m_searchBox.GetText().empty()) {
     Fumbo::Graphic2D::DrawText(
         Lang::Get("Ketik nama playlist...", "Type a playlist name..."),
-        {SS_SEARCH_X + 18.0f, SS_SEARCH_Y + 16.0f}, SpaceB, 22,
+        {SS_SEARCH_X + 18, SS_SEARCH_Y + 16}, SpaceB, 22,
         {currentTheme.second1.r, currentTheme.second1.g, currentTheme.second1.b,
          55});
   }
@@ -231,7 +232,7 @@ void SearchScreen::DrawDirty() {
     countStr = std::to_string(m_filteredIndices.size()) + " " +
                Lang::Get("playlist ditemukan", "playlists found");
   }
-  Fumbo::Graphic2D::DrawText(countStr, {SS_RESULTS_X, SS_RESULTS_Y - 18.0f},
+  Fumbo::Graphic2D::DrawText(countStr, {SS_RESULTS_X, SS_RESULTS_Y - 18},
                              SpaceB, 14, {130, 135, 155, 200});
 
   // Render setiap baris hasil, lewati baris yang berada di luar area tampil.
@@ -273,7 +274,7 @@ void SearchScreen::DrawDirty() {
                                               : Color{242, 245, 248, 200};
     }
     Fumbo::Graphic2D::DrawRectangleRounded(
-        {SS_RESULTS_X, rowTop, SS_RESULTS_W, SS_ROW_H}, 0.18f, 8, rowBg);
+        {SS_RESULTS_X, rowTop, SS_RESULTS_W, SS_ROW_H}, 0.18, 8, rowBg);
 
     // Garis kiri berwarna aksen saat hover atau playlist aktif
     bool isActive = AppState::Instance().activePlaylistId == pl.id;
@@ -285,8 +286,8 @@ void SearchScreen::DrawDirty() {
     }
 
     // Gambar thumbnail sampul di sisi kiri baris.
-    float coverX = SS_RESULTS_X + 12.0f;
-    float coverY = rowTop + (SS_ROW_H - SS_COVER_SZ) / 2.0f;
+    float coverX = SS_RESULTS_X + 12;
+    float coverY = rowTop + (SS_ROW_H - SS_COVER_SZ) / 2;
     if (ri < (int)m_resultCovers.size() && m_resultCovers[ri].id != 0) {
       const Texture2D &tex = m_resultCovers[ri];
       // Gambar dengan mempertahankan rasio aspek
@@ -295,31 +296,32 @@ void SearchScreen::DrawDirty() {
       float dh = tex.height * scale;
       Fumbo::Graphic2D::DrawTexturePro(
           tex, {0, 0, (float)tex.width, (float)tex.height},
-          {coverX + (SS_COVER_SZ - dw) / 2.0f,
-           coverY + (SS_COVER_SZ - dh) / 2.0f, dw, dh},
-          {0, 0}, 0.0f, WHITE);
+          {coverX + (SS_COVER_SZ - dw) / 2,
+           coverY + (SS_COVER_SZ - dh) / 2, dw, dh},
+          {0, 0}, 0, WHITE);
     }
 
     // Gambar nama playlist dan batas panjang teks agar tidak melebihi lebar
     // baris.
-    float textX = coverX + SS_COVER_SZ + 16.0f;
+    float textX = coverX + SS_COVER_SZ + 16;
     std::string dispName = pl.name;
     if (dispName.size() > 45)
       dispName = dispName.substr(0, 42) + "...";
-    Fumbo::Graphic2D::DrawText(dispName, {textX, rowTop + 14.0f}, SpaceB, 22,
+    Fumbo::Graphic2D::DrawText(dispName, {textX, rowTop + 14}, SpaceB, 22,
                                isHovered ? WHITE : currentTheme.second1);
 
-    // [LINKED LIST] Gambar jumlah lagu menggunakan DoublyLinkedList::size()
+    // [LINKED LIST] Gambar jumlah lagu menggunakan DoublyLinkedList size daftar
+    // berantai ganda
     std::string trackCount =
         std::to_string(pl.tracks.size()) + " " + Lang::Get("lagu", "tracks");
-    Fumbo::Graphic2D::DrawText(trackCount, {textX, rowTop + 44.0f}, SpaceB, 15,
+    Fumbo::Graphic2D::DrawText(trackCount, {textX, rowTop + 44}, SpaceB, 15,
                                {130, 135, 155, 200});
 
     // Tampilkan indikator teks kecil jika playlist ini sedang diputar.
     if (isActive) {
       Fumbo::Graphic2D::DrawText(
-          Lang::Get("▶ Diputar", "▶ Playing"),
-          {SS_RESULTS_X + SS_RESULTS_W - 130.0f, rowTop + 26.0f}, SpaceB, 15,
+          Lang::Get("Sedang Diputar", "Now Playing"),
+          {SS_RESULTS_X + SS_RESULTS_W - 130, rowTop + 26}, SpaceB, 15,
           {currentTheme.second2.r, currentTheme.second2.g,
            currentTheme.second2.b, 230});
     }
@@ -329,8 +331,8 @@ void SearchScreen::DrawDirty() {
   if (m_filteredIndices.empty() && !m_searchBox.GetText().empty()) {
     Fumbo::Graphic2D::DrawText(
         Lang::Get("Tidak ada playlist yang cocok", "No matching playlists"),
-        {SS_RESULTS_X + SS_RESULTS_W / 2.0f - 180.0f,
-         SS_RESULTS_Y + SS_RESULTS_H / 2.0f - 20.0f},
+        {SS_RESULTS_X + SS_RESULTS_W / 2 - 180,
+         SS_RESULTS_Y + SS_RESULTS_H / 2 - 20},
         SpaceB, 22, {100, 105, 120, 200});
   }
 
@@ -339,7 +341,7 @@ void SearchScreen::DrawDirty() {
     Fumbo::Graphic2D::DrawText(
         Lang::Get("Belum ada playlist. Buat satu di menu Home.",
                   "No playlists yet. Create one from the Home screen."),
-        {SS_RESULTS_X + 10.0f, SS_RESULTS_Y + 20.0f}, SpaceB, 18,
+        {SS_RESULTS_X + 10, SS_RESULTS_Y + 20}, SpaceB, 18,
         {100, 105, 120, 200});
   }
 }

@@ -7,26 +7,11 @@
 PlaylistCard::PlaylistCard(Rectangle bounds, const Playlist &pl,
                            Texture2D coverTex)
     : m_bounds(bounds), m_image(coverTex), m_title(pl.name),
-      // [LINKED LIST] Mengambil jumlah lagu dari DoublyLinkedList::size()
-      m_playlistId(pl.id), m_trackCount(pl.tracks.size()),
-      m_lastThemeId(currentTheme.id) {
-  Rectangle editRec = {m_bounds.x + m_bounds.width - 60,
-                       m_bounds.y + m_bounds.height - 38, 50, 26};
-  m_editBtn = Fumbo::UI::Button(editRec);
-  m_editBtn.ApplyStyle(btnstyle);
-  m_editBtn.Roundness(0.2f);
-  m_editBtn.SetButtonColor(currentTheme.prim1);
-  m_editBtn.AddText(Lang::Get("Ubah", "Edit"), SpaceB, 13, currentTheme.second2);
+      // Daftar berantai ganda mengambil jumlah lagu dari DoublyLinkedList size
+      m_playlistId(pl.id), m_trackCount(pl.tracks.size()) {
 }
 
 void PlaylistCard::Update() {
-  m_editBtn.IsHover(); // Trigger auto-update since Update() is private
-
-  if (m_lastThemeId != currentTheme.id) {
-    m_lastThemeId = currentTheme.id;
-    m_editBtn.SetButtonColor(currentTheme.prim1);
-    m_editBtn.AddText(Lang::Get("Ubah", "Edit"), SpaceB, 13, currentTheme.second2);
-  }
 }
 
 void PlaylistCard::Draw(float offsetX) {
@@ -34,11 +19,11 @@ void PlaylistCard::Draw(float offsetX) {
   drawBounds.x += offsetX;
 
   // Latar belakang kartu dengan sudut membulat
-  Fumbo::Graphic2D::DrawRectangleRounded(drawBounds, 0.08f, 8,
+  Fumbo::Graphic2D::DrawRectangleRounded(drawBounds, 0.08, 8,
                                          currentTheme.prim2);
 
   // Gambar sampul
-  float imgH = drawBounds.height - 70.0f;
+  float imgH = drawBounds.height - 70;
   if (m_image.id != 0) {
     Fumbo::Graphic2D::DrawTexture(m_image, {drawBounds.x + 8, drawBounds.y + 8},
                                   {drawBounds.width - 16, imgH - 8});
@@ -50,59 +35,35 @@ void PlaylistCard::Draw(float offsetX) {
         (int)(drawBounds.width - 16), (int)(imgH - 8), currentTheme.second2,
         gradEnd);
     Fumbo::Graphic2D::DrawText("Music",
-                               {drawBounds.x + drawBounds.width * 0.5f - 20,
-                                drawBounds.y + imgH * 0.5f - 20},
+                               {drawBounds.x + drawBounds.width * 0.5 - 20,
+                                drawBounds.y + imgH * 0.5 - 20},
                                SpaceB, 48, {150, 160, 200, 200});
   }
 
   // Nama playlist
   Fumbo::Graphic2D::DrawText(m_title,
-                             {drawBounds.x + 10, drawBounds.y + imgH + 6},
+                             {drawBounds.x + 10, drawBounds.y + imgH + 12},
                              SpaceB, 22, currentTheme.second1);
 
   // Jumlah lagu
   std::string sub =
       std::to_string(m_trackCount) + " " + Lang::Get("lagu", "songs");
-  Fumbo::Graphic2D::DrawText(sub, {drawBounds.x + 10, drawBounds.y + imgH + 34},
+  Fumbo::Graphic2D::DrawText(sub, {drawBounds.x + 10, drawBounds.y + imgH + 40},
                              SpaceB, 15, {160, 165, 175, 255});
-
-  // Gambar tombol Ubah di sudut kanan bawah kartu menggunakan Fumbo Button
-  Rectangle editRec = {drawBounds.x + drawBounds.width - 60,
-                       drawBounds.y + drawBounds.height - 38, 50, 26};
-  m_editBtn.SetBounds(editRec);
-  m_editBtn.SetInteractable(offsetX == 0.0f);
-  m_editBtn.Draw();
 
   // Sorotan saat hover (hanya jika tidak sedang beranimasi)
   Rectangle screenDrawBounds = Fumbo::Utils::UISpaceToScreen(drawBounds);
-  Vector2 uiOffset = Fumbo::Utils::GetUIOffset();
-  screenDrawBounds.x += uiOffset.x;
-  screenDrawBounds.y += uiOffset.y;
 
-  if (offsetX == 0.0f &&
+  if (offsetX == 0 &&
       CheckCollisionPointRec(GetMousePosition(), screenDrawBounds)) {
-    Fumbo::Graphic2D::DrawRectangleRoundedLines(drawBounds, 0.08f, 8,
+    Fumbo::Graphic2D::DrawRectangleRoundedLines(drawBounds, 0.08, 8,
                                                 currentTheme.second2);
   }
 }
 
-bool PlaylistCard::IsEditClicked() const { return m_editBtn.IsPressed(); }
-
 bool PlaylistCard::IsClicked() const {
   Rectangle screenBounds = Fumbo::Utils::UISpaceToScreen(m_bounds);
-  Vector2 uiOffset = Fumbo::Utils::GetUIOffset();
-  screenBounds.x += uiOffset.x;
-  screenBounds.y += uiOffset.y;
 
-  Rectangle editRec = {m_bounds.x + m_bounds.width - 60,
-                       m_bounds.y + m_bounds.height - 38, 50, 26};
-  Rectangle screenEditRec = Fumbo::Utils::UISpaceToScreen(editRec);
-  screenEditRec.x += uiOffset.x;
-  screenEditRec.y += uiOffset.y;
-
-  if (CheckCollisionPointRec(GetMousePosition(), screenEditRec)) {
-    return false;
-  }
   return CheckCollisionPointRec(GetMousePosition(), screenBounds) &&
          IsMouseButtonPressed(MOUSE_LEFT_BUTTON);
 }

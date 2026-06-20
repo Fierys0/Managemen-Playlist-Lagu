@@ -13,40 +13,40 @@ public:
   void DrawDirty() override;
 
 private:
-  // Controls
+  // Kontrol
   Fumbo::UI::Button m_playPauseBtn;
   Fumbo::UI::Button m_nextBtn;
   Fumbo::UI::Button m_prevBtn;
 
-  // Cover art
+  // Gambar sampul
   Texture2D m_coverTex{};
 
-  // Progress and volume sliders
+  // Slider kemajuan dan volume
   Fumbo::UI::Slider m_progressSlider;
   Fumbo::UI::Slider m_volumeSlider;
 
-  // Button textures
+  // Tekstur tombol
   Texture2D m_playIcon{};
   Texture2D m_pauseIcon{};
   Texture2D m_nextIcon{};
   Texture2D m_prevIcon{};
 
-  // [CIRCULAR LINKED LIST] Deteksi perubahan lagu menggunakan pointer ke Track
-  // Alih-alih menyimpan indeks (yang tidak lagi relevan dengan circular list),
+  // Senarai berantai melingkar Deteksi perubahan lagu menggunakan pointer ke Track
+  // Alih alih menyimpan indeks yang tidak lagi relevan dengan senarai melingkar
   // kita simpan pointer ke Track yang sedang ditampilkan untuk mendeteksi
-  // kapan lagu berubah dan perlu dimuat ulang.
+  // kapan lagu berubah dan perlu dimuat ulang
   const Track *m_loadedTrackPtr{nullptr};
 
-  // Cached track info for display
+  // Informasi lagu yang disimpan dalam cache untuk ditampilkan
   std::string m_displayTitle{};
   std::string m_displayArtist{};
   std::string m_displayAlbum{};
 
   void LoadCurrentTrack();
 
-  // Animated cover spin angle
-  float m_coverAngle{0.0f};
+  // Sudut putaran sampul animasi
+  float m_coverAngle{0};
 
-  // Color accent from cover (precomputed)
+  // Aksen warna dari sampul yang dihitung sebelumnya
   Color m_accentColor{80, 160, 255, 255};
 };

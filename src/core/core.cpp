@@ -13,13 +13,13 @@
 AppCore::Screen AppCore::currentScreen = AppCore::Screen::Home;
 
 // tata letak sidebar
-static constexpr float NAV_X      = 0.0f;
-static constexpr float NAV_W      = 70.0f;
-static constexpr float NAV_BTN_H  = 70.0f;
-static constexpr float NAV_HOME_Y = 80.0f;
-static constexpr float NAV_PLAY_Y = 160.0f;
-static constexpr float NAV_SEARCH_Y = 240.0f;
-static constexpr float NAV_SET_Y  = 640.0f;
+static constexpr float NAV_X      = 0;
+static constexpr float NAV_W      = 70;
+static constexpr float NAV_BTN_H  = 70;
+static constexpr float NAV_HOME_Y = 80;
+static constexpr float NAV_PLAY_Y = 160;
+static constexpr float NAV_SEARCH_Y = 240;
+static constexpr float NAV_SET_Y  = 640;
 
 void AppCore::Init() {
   // Kontrol window
@@ -54,10 +54,10 @@ void AppCore::Init() {
   navPlayBtn.ApplyStyle(btnstyle);
   navSearchBtn.ApplyStyle(btnstyle);
   navSettingsBtn.ApplyStyle(btnstyle);
-  navHomeBtn.Roundness(0.25f);
-  navPlayBtn.Roundness(0.25f);
-  navSearchBtn.Roundness(0.25f);
-  navSettingsBtn.Roundness(0.25f);
+  navHomeBtn.Roundness(0.25);
+  navPlayBtn.Roundness(0.25);
+  navSearchBtn.Roundness(0.25);
+  navSettingsBtn.Roundness(0.25);
 
   // Muat gambar navigasi dari asset pack
   m_navHomeTex     = Fumbo::Assets::LoadTexture("assets/images/homescreen.png");
@@ -180,7 +180,7 @@ void AppCore::Update() {
       }
     } else {
       // Tampilkan pesan pengingat selama 3 detik
-      m_noPlaylistNudgeTimer = 3.0f;
+      m_noPlaylistNudgeTimer = 3;
     }
   }
 
@@ -194,7 +194,7 @@ void AppCore::Update() {
     Fumbo::Instance().ChangeState(std::make_shared<Settings>());
   }
 
-  if (m_noPlaylistNudgeTimer > 0.0f)
+  if (m_noPlaylistNudgeTimer > 0)
     m_noPlaylistNudgeTimer -= GetFrameTime();
 }
 
@@ -212,9 +212,9 @@ void AppCore::DrawDirty() {
     Color bgCol = isActive ? Color{currentTheme.second2.r, currentTheme.second2.g, currentTheme.second2.b, 60}
                            : (btn.IsHover() ? (currentTheme.id == darkTheme.id ? Color{55, 60, 70, 200} : Color{210, 215, 220, 200})
                                              : (currentTheme.id == darkTheme.id ? Color{30, 33, 40, 150} : Color{225, 228, 230, 150}));
-    Fumbo::Graphic2D::DrawRectangleRounded(bgRec, 0.25f, 6, bgCol);
+    Fumbo::Graphic2D::DrawRectangleRounded(bgRec, 0.25, 6, bgCol);
     if (isActive) {
-      Fumbo::Graphic2D::DrawRectangleRoundedLinesEx(bgRec, 0.25f, 6, 1.5f,
+      Fumbo::Graphic2D::DrawRectangleRoundedLinesEx(bgRec, 0.25, 6, 1.5,
                                                     Color{currentTheme.second2.r, currentTheme.second2.g, currentTheme.second2.b, 180});
     }
   };
@@ -235,11 +235,11 @@ void AppCore::DrawDirty() {
                                   currentTheme.second1);
 
   // Pesan pengingat "pilih playlist dulu" dengan animasi alpha
-  if (m_noPlaylistNudgeTimer > 0.0f) {
-    float alpha = fminf(1.0f, m_noPlaylistNudgeTimer);
+  if (m_noPlaylistNudgeTimer > 0) {
+    float alpha = fminf(1, m_noPlaylistNudgeTimer);
     unsigned char a = (unsigned char)(alpha * 220);
     Fumbo::Graphic2D::DrawRectangleRounded({NAV_W + 10, NAV_PLAY_Y, 280, 55},
-                                           0.3f, 8, {30, 33, 40, a});
+                                           0.3, 8, {30, 33, 40, a});
     std::string nudgeText = Lang::Get("Pilih playlist terlebih dahulu :)",
                                       "Pick a playlist first :)");
     Fumbo::Graphic2D::DrawText(nudgeText, {NAV_W + 20, NAV_PLAY_Y + 15}, SpaceB,

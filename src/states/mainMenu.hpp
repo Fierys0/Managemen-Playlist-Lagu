@@ -42,6 +42,6 @@ private:
   // Pagination & Slide transition animation variables
   int m_currentPage{0};
   int m_prevPage{0};
-  float m_transitionProgress{1.0f}; // 1.0f means transition is finished/idle
+  float m_transitionProgress{1}; // 1.0f means transition is finished/idle
   int m_transitionDirection{0};     // -1 for left (prev page), 1 for right (next page)
 };

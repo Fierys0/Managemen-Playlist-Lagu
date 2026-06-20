@@ -31,11 +31,12 @@ public:
       if (p.id == id) {
         p.name = pl.name;
         p.coverPath = pl.coverPath;
+        p.description = pl.description;
         p.tracks = pl.tracks;
 
         // Jika playlist yang diupdate sedang aktif diputar, perbarui antrean
         if (activePlaylistId == id) {
-          // [CIRCULAR LINKED LIST] Bangun ulang antrean melingkar dari tracks
+          // [CIRCULAR LINKED LIST] Load ulang antrean melingkar dari tracks
           playQueue.clear();
           for (const auto &t : p.tracks)
             playQueue.pushBack(t);
@@ -58,24 +59,24 @@ public:
   }
 
   // Status pemutaran aktif
-  int activePlaylistId{-1}; // -1 berarti tidak ada
+  int activePlaylistId{-1}; // Nilai minus satu berarti tidak ada
 
   // [CIRCULAR LINKED LIST] Antrean pemutaran lagu menggunakan senarai melingkar
-  // Menggantikan std::deque<Track> + currentQueueIndex.
-  // Node terakhir menunjuk ke node pertama, sehingga navigasi Next/Prev
-  // secara otomatis berputar tanpa perlu pengecekan batas indeks.
+  // Menggantikan std::deque untuk melacak indeks antrean
+  // Node terakhir menunjuk ke node pertama sehingga navigasi berikutnya dan
+  // sebelumnya secara otomatis berputar tanpa perlu pengecekan batas indeks
   CircularLinkedList<Track> playQueue{};
 
-  // [STACK] Riwayat pemutaran lagu menggunakan Stack (LIFO)
-  // Setiap kali lagu berpindah ke lagu berikutnya, lagu yang baru saja diputar
-  // di-push ke stack ini. Saat tombol Prev ditekan, lagu teratas di-pop
-  // untuk kembali ke lagu yang benar-benar baru didengar.
+  // [STACK] Riwayat pemutaran lagu menggunakan Stack LIFO
+  // Setiap kali lagu berpindah ke lagu berikutnya lagu yang baru saja diputar
+  // dimasukkan ke tumpukan ini. Saat tombol sebelumnya ditekan lagu teratas
+  // dikeluarkan untuk kembali ke lagu yang baru didengar
   std::stack<Track> playbackHistory{};
 
-  // [QUEUE] Antrean prioritas "Play Next" menggunakan Queue (FIFO)
+  // [QUEUE] Antrean prioritas putar nanti menggunakan Queue FIFO
   // Pengguna dapat menambahkan lagu ke antrean ini agar diputar setelah lagu
-  // saat ini selesai. Lagu di antrean ini diambil terlebih dahulu (FIFO)
-  // sebelum berpindah ke lagu berikutnya di playQueue.
+  // saat ini selesai. Lagu di antrean ini diambil terlebih dahulu
+  // sebelum berpindah ke lagu berikutnya di playQueue
   std::queue<Track> customNextQueue{};
 
   bool isPlaying{false};
@@ -87,13 +88,19 @@ public:
   // Isi antrean dari playlist dan mulai dari lagu pertama.
   void PlayPlaylist(const Playlist &pl);
 
+  // Isi antrean dari playlist dalam urutan acak dan mulai putar.
+  void PlayPlaylistShuffled(const Playlist &pl);
+
+  // Isi antrean dari playlist dan mulai dari lagu ke indeks trackIndex.
+  void PlayPlaylistFromTrack(const Playlist &pl, int trackIndex);
+
   // [CIRCULAR LINKED LIST] Kembalikan lagu saat ini dari senarai melingkar
   const Track *CurrentTrack() const { return playQueue.getCurrent(); }
 
   void NextTrack();
   void PrevTrack();
 
-  // [QUEUE] Tambahkan lagu ke antrean prioritas "Play Next"
+  // [QUEUE] Tambahkan lagu ke antrean prioritas putar nanti
   void AddToNextQueue(const Track &t) { customNextQueue.push(t); }
 
   // [STACK] Bersihkan riwayat pemutaran
@@ -108,11 +115,11 @@ public:
   // [CIRCULAR LINKED LIST] Kembalikan ukuran antrean pemutaran
   int GetQueueSize() const { return playQueue.size(); }
 
-  // Playback state variables
+  // Variabel status pemutaran
   std::string loadedTrackPath{""};
   bool isAudioLoaded{false};
 
-  // Playback control methods
+  // Metode kontrol pemutaran
   void UpdateMusicPlayback();
   void PlayCurrentTrack();
   void StopMusic();
@@ -123,12 +130,13 @@ public:
   std::string language{"id"};
   std::string themeName{"dark"};
 
-  // Persistensi data ke dua file terpisah di dalam subfolder user/
-  static std::string UserDir();             // Buat & kembalikan folder user/
-  static std::string PlaylistsFilePath();   // user/playlists.json
-  static std::string PreferencesFilePath(); // user/preferences.json
-  void SaveToFile() const;   // Simpan playlist & preferensi ke file masing-masing
-  void LoadFromFile();       // Muat playlist & preferensi dari file masing-masing
+  // Persistensi data ke dua file terpisah di dalam subfolder user
+  static std::string UserDir();             // Buat dan kembalikan folder user
+  static std::string PlaylistsFilePath();   // Jalur ke file playlists.json
+  static std::string PreferencesFilePath(); // Jalur ke file preferences.json
+  void
+  SaveToFile() const;  // Simpan playlist dan preferensi ke file masing masing
+  void LoadFromFile(); // Muat playlist dan preferensi dari file masing masing
 
 private:
   AppState() = default;
