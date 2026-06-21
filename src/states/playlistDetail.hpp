@@ -33,6 +33,7 @@ private:
   Fumbo::UI::Button m_playBtn;
   Fumbo::UI::Button m_shuffleBtn;
   Fumbo::UI::Button m_editBtn;
+  Fumbo::UI::Button m_sortBtn;
   Fumbo::UI::Button m_backBtn;
 
   // Tekstur ikon

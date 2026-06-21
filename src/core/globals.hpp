@@ -4,6 +4,8 @@
 
 extern Font SpaceB;
 
+// [ALPRO] [STRUCT]
+// Menggunakan struct ColorTheme untuk definisi skema warna UI
 typedef struct colortheme
 {
   int id;

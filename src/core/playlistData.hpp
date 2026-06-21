@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 
+// [ALPRO] [STRUCT]
+// Menggunakan struct Track untuk menyimpan detail informasi lagu
 struct Track {
   std::string filePath{}; // Path absolut ke file audio
   std::string title{};    // Dari metadata VLC (atau nama file sebagai cadangan)
@@ -12,6 +14,8 @@ struct Track {
   long long durationMs{0};    // Durasi dalam milidetik dari VLC
 };
 
+// [ALPRO] [STRUCT]
+// Menggunakan struct Playlist untuk menyimpan koleksi lagu dan metadata playlist
 struct Playlist {
   int id{0};
   std::string name{};

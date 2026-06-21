@@ -6,6 +6,7 @@
 #include "states/playMusic.hpp"
 #include "states/searchScreen.hpp"
 #include "states/settings.hpp"
+#include "playlistUtils.hpp"
 #include <cmath>
 #include <memory>
 

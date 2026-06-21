@@ -35,8 +35,8 @@ void PlaylistCard::Draw(float offsetX) {
         (int)(drawBounds.width - 16), (int)(imgH - 8), currentTheme.second2,
         gradEnd);
     Fumbo::Graphic2D::DrawText("Music",
-                               {drawBounds.x + drawBounds.width * 0.5 - 20,
-                                drawBounds.y + imgH * 0.5 - 20},
+                               {drawBounds.x + drawBounds.width * 0.5f - 20.0f,
+                                drawBounds.y + imgH * 0.5f - 20.0f},
                                SpaceB, 48, {150, 160, 200, 200});
   }
 

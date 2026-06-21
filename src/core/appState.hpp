@@ -16,7 +16,8 @@ public:
     return s;
   }
 
-  // Daftar playlist
+  // [ALPRO] [Standard Template Library (STL): Vector dan List]
+  // Menyimpan daftar playlist menggunakan std::vector
   std::vector<Playlist> playlists{};
   int nextPlaylistId{1};
 
@@ -94,7 +95,8 @@ public:
   // Isi antrean dari playlist dan mulai dari lagu ke indeks trackIndex.
   void PlayPlaylistFromTrack(const Playlist &pl, int trackIndex);
 
-  // [CIRCULAR LINKED LIST] Kembalikan lagu saat ini dari senarai melingkar
+  // [ALPRO] [REFERENCES & POINTER]
+  // Mengembalikan pointer ke objek Track yang sedang aktif diputar
   const Track *CurrentTrack() const { return playQueue.getCurrent(); }
 
   void NextTrack();
@@ -145,7 +147,11 @@ private:
   Track m_nextTrackToPlay{};
 };
 
+// [ALPRO] [NAMESPACE]
+// Mendefinisikan namespace Lang untuk fungsi lokalisasi bahasa
 namespace Lang {
+// [ALPRO] [DEFAULT ARGUMENT & INLINE FUNCTION]
+// Fungsi inline Get untuk mereturn terjemahan string berdasarkan bahasa aktif
 inline std::string Get(const std::string &idKey, const std::string &enKey) {
   return (AppState::Instance().language == "en") ? enKey : idKey;
 }

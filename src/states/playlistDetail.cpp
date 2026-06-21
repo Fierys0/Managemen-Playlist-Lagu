@@ -3,6 +3,7 @@
 #include "../core/core.hpp"
 #include "../core/coverCache.hpp"
 #include "../core/globals.hpp"
+#include "../core/playlistUtils.hpp"
 #include "addPlaylist.hpp"
 #include "fumbo.hpp"
 #include "mainMenu.hpp"
@@ -83,10 +84,63 @@ void PlaylistDetail::Init() {
   m_playlistDesc = pl->description;
   m_coverPath = pl->coverPath;
   m_tracks = pl->tracks.toVector();
-  m_trackCount = (int)m_tracks.size();
-  m_totalDurationMs = 0;
-  for (const auto &t : m_tracks)
-    m_totalDurationMs += t.durationMs;
+
+  // [ALPRO] [Standard Template Library (STL): Vector dan List]
+  // Mengonversi data dari DoublyLinkedList kustom ke kontainer std::list dari STL
+  std::list<Track> tempSTLList = PlaylistUtils::convertToSTLList(*pl);
+
+  // [ALPRO] [FUNCTION OVERLOADING & FUNCTION TEMPLATE]
+  // Memanggil countTotalTracks yang ber-overload (satu menerima std::vector, satu std::list)
+  m_trackCount = PlaylistUtils::countTotalTracks(m_tracks);
+  int listSize = PlaylistUtils::countTotalTracks(tempSTLList);
+  Fumbo::Log::Infof("[ALPRO] PlaylistDetail::Init: Total track via Overloading (Vector = %d, List = %d)", m_trackCount, listSize);
+
+  // [ALPRO] [FUNCTION OVERLOADING & FUNCTION TEMPLATE]
+  // Memanggil template fungsi filterTracks untuk mendapatkan lagu yang berdurasi lebih dari 3 menit (> 180s)
+  auto longTracks = PlaylistUtils::filterTracks(m_tracks, [](const Track& t) {
+    return t.durationMs > 180000;
+  });
+  Fumbo::Log::Infof("[ALPRO] Jumlah lagu berdurasi panjang (> 3 menit) via Template: %d", (int)longTracks.size());
+
+  // [ALPRO] [STRUCT]
+  // Menggunakan struct TrackStats untuk mengumpulkan data statistik lagu secara terorganisir
+  PlaylistUtils::TrackStats stats;
+  stats.artist = pl->name;
+  stats.playCount = 0;
+  stats.totalDurationMs = 0;
+
+  for (const auto &t : m_tracks) {
+    // [ALPRO] [Exception Handling dalam C++]
+    // Melakukan validasi pada data track. Jika tidak valid (judul kosong atau durasi < 0), lempar exception.
+    try {
+      PlaylistUtils::validateTrack(t);
+
+      // [ALPRO] [REFERENCES & POINTER]
+      // Passing pointer ke struct (&stats) dan reference (t) ke fungsi updateStats
+      PlaylistUtils::updateStats(&stats, t);
+    } catch (const std::exception& e) {
+      // [ALPRO] [DEFAULT ARGUMENT & INLINE FUNCTION]
+      // Memanggil fungsi inline formatLog dengan custom prefix untuk merekam peringatan validasi
+      std::string logMsg = PlaylistUtils::formatLog(e.what(), "[VALIDASI LAGU]");
+      Fumbo::Log::Warn(logMsg.c_str());
+    }
+  }
+  m_totalDurationMs = stats.totalDurationMs;
+
+  // [ALPRO] [DEFAULT ARGUMENT & INLINE FUNCTION]
+  // Memanggil fungsi inline formatLog dengan nilai parameter default (tanpa parameter kedua)
+  std::string infoLog = PlaylistUtils::formatLog("Statistik playlist berhasil dimuat.");
+  Fumbo::Log::Info(infoLog.c_str());
+
+  // [ALPRO] [Sort, find, dan count]
+  // 1. Menghitung jumlah lagu dengan nama artis yang sama dengan nama playlist (jika ada) menggunakan std::count_if dan iterator STL
+  int artistMatchCount = PlaylistUtils::countTracksByArtist(m_tracks, m_playlistName);
+  Fumbo::Log::Infof("[ALPRO] Jumlah lagu dengan nama artis '%s': %d", m_playlistName.c_str(), artistMatchCount);
+
+  // 2. Mencari keberadaan lagu dengan judul "Intro" menggunakan std::find_if dan iterator STL
+  Track dummyFound;
+  bool hasIntro = PlaylistUtils::findTrackByTitle(m_tracks, "Intro", dummyFound);
+  Fumbo::Log::Infof("[ALPRO] Apakah terdapat track 'Intro' di playlist? %s", hasIntro ? "Ya" : "Tidak");
 
   // Muat tekstur sampul dari CoverCache
   m_coverTex = {};
@@ -131,6 +185,13 @@ void PlaylistDetail::Init() {
   m_editBtn.ApplyStyle(btnstyle);
   m_editBtn.Roundness(0.4);
   m_editBtn.AddText(Lang::Get("Ubah", "Edit"), SpaceB, 16,
+                    currentTheme.second1);
+
+  // Tombol urutkan lagu
+  m_sortBtn = Fumbo::UI::Button({INFO_X + 234, BTN_Y + 6, 120, 44});
+  m_sortBtn.ApplyStyle(btnstyle);
+  m_sortBtn.Roundness(0.4);
+  m_sortBtn.AddText(Lang::Get("Urut Dur", "Sort Dur"), SpaceB, 16,
                     currentTheme.second1);
 
   // Tombol kembali
@@ -191,6 +252,12 @@ void PlaylistDetail::Update() {
   if (m_editBtn.IsPressed()) {
     Fumbo::Instance().ChangeState(std::make_shared<AddPlaylist>(m_playlistId));
     return;
+  }
+
+  // [ALPRO] [Sort, find, dan count]
+  // Mengurutkan lagu berdasarkan durasinya menggunakan std::sort dan iterator STL
+  if (m_sortBtn.IsPressed()) {
+    PlaylistUtils::sortTracksByDuration(m_tracks);
   }
 
   // Pengguliran daftar lagu
@@ -292,10 +359,11 @@ void PlaylistDetail::DrawDirty() {
   // Tombol kembali
   m_backBtn.Draw();
 
-  // Tombol putar acak dan ubah
+  // Tombol putar acak, ubah, dan urutkan
   m_playBtn.Draw();
   m_shuffleBtn.Draw();
   m_editBtn.Draw();
+  m_sortBtn.Draw();
 
   // Header daftar lagu
   float headerY = LIST_Y - 24;
@@ -305,7 +373,7 @@ void PlaylistDetail::DrawDirty() {
                              {LIST_X + 50, headerY}, SpaceB, 14,
                              {110, 115, 130, 255});
   Fumbo::Graphic2D::DrawText(Lang::Get("ARTIS", "ARTIST"),
-                             {LIST_X + listW * 0.55, headerY}, SpaceB, 14,
+                             {LIST_X + listW * 0.55f, headerY}, SpaceB, 14,
                              {110, 115, 130, 255});
   Fumbo::Graphic2D::DrawText(Lang::Get("DURASI", "DURATION"),
                              {LIST_X + listW - 120, headerY}, SpaceB, 14,
@@ -378,7 +446,7 @@ void PlaylistDetail::DrawDirty() {
       std::string dispArtist = t.artist;
       if (dispArtist.size() > 30)
         dispArtist = dispArtist.substr(0, 27) + "...";
-      Fumbo::Graphic2D::DrawText(dispArtist, {LIST_X + listW * 0.55, y + 18},
+      Fumbo::Graphic2D::DrawText(dispArtist, {LIST_X + listW * 0.55f, y + 18},
                                  SpaceB, 14, {140, 145, 160, 255});
     }
 
