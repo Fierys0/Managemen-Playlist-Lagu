@@ -123,6 +123,7 @@ if(WIN32)
   # Salin DLL VLC ke direktori output setelah build selesai.
   # File DLL tidak tersedia di dalam SDK, salin dari instalasi VLC ke src/lib/windows/vlc.
   set(VLC_DLL_DIR "${CMAKE_SOURCE_DIR}/src/lib/windows/vlc")
+  set(_vlc_dlls_found TRUE)
   foreach(_dll libvlc.dll libvlccore.dll)
     if(EXISTS "${VLC_DLL_DIR}/${_dll}")
       add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
@@ -132,12 +133,26 @@ if(WIN32)
         COMMENT "Copying ${_dll} to output directory"
       )
     else()
-      message(WARNING
-        "VLC DLL not found: ${VLC_DLL_DIR}/${_dll}\n"
-        "Copy libvlc.dll and libvlccore.dll from your VLC install into "
-        "src/lib/windows/vlc/ for the app to run on Windows.")
+      set(_vlc_dlls_found FALSE)
     endif()
   endforeach()
+
+  if(NOT _vlc_dlls_found)
+    message(WARNING
+      "VLC DLLs not found in: ${VLC_DLL_DIR}\n"
+      "Please copy libvlc.dll, libvlccore.dll, and the 'plugins' directory from your VLC install into "
+      "src/lib/windows/vlc/ for the app to run and parse metadata on Windows.")
+  endif()
+
+  # Salin folder plugins secara penuh (yang sudah dirampingkan secara manual)
+  if(EXISTS "${VLC_DLL_DIR}/plugins")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${VLC_DLL_DIR}/plugins"
+        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/plugins"
+      COMMENT "Copying VLC plugins directory to output"
+    )
+  endif()
 
   # Salin DLL standar MinGW jika melakukan cross-compiling
   if(CMAKE_CROSSCOMPILING AND DEFINED MINGW_PREFIX)
