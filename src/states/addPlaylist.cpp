@@ -81,7 +81,8 @@ void AddPlaylist::Init() {
       m_titleBox.SetText(found->name);
       m_descBox.SetText(found->description);
       m_coverPath = found->coverPath;
-      // [LINKED LIST] Konversi DoublyLinkedList ke vector untuk diubah di antarmuka pengguna
+      // [LINKED LIST] Konversi DoublyLinkedList ke vector untuk diubah di
+      // antarmuka pengguna
       m_tracks = found->tracks.toVector();
 
       if (!m_coverPath.empty()) {
@@ -118,7 +119,8 @@ void AddPlaylist::Cleanup() {
 }
 
 void AddPlaylist::OpenAudioPicker() {
-  if (m_audioDialog || m_coverDialog) return;
+  if (m_audioDialog || m_coverDialog)
+    return;
 
   m_audioDialog = std::make_unique<Fumbo::FileDialog::OpenFileAsync>(
       "Pilih file audio",
@@ -128,7 +130,8 @@ void AddPlaylist::OpenAudioPicker() {
 }
 
 void AddPlaylist::OpenCoverPicker() {
-  if (m_audioDialog || m_coverDialog) return;
+  if (m_audioDialog || m_coverDialog)
+    return;
 
   m_coverDialog = std::make_unique<Fumbo::FileDialog::OpenFileAsync>(
       "Pilih gambar sampul",
@@ -235,7 +238,8 @@ void AddPlaylist::Update() {
     pl.name = m_titleBox.GetText();
     pl.description = m_descBox.GetText();
     pl.coverPath = m_coverPath;
-    // [LINKED LIST] Konversi vector kembali ke DoublyLinkedList untuk penyimpanan
+    // [LINKED LIST] Konversi vector kembali ke DoublyLinkedList untuk
+    // penyimpanan
     for (auto &t : m_tracks)
       pl.tracks.pushBack(std::move(t));
     if (m_playlistId != -1) {
@@ -404,7 +408,7 @@ void AddPlaylist::DrawDirty() {
       Fumbo::Graphic2D::DrawRectangleRounded(upRec, 0.2, 4,
                                              hoverUp ? Color{80, 160, 255, 100}
                                                      : Color{50, 53, 60, 100});
-      Fumbo::Graphic2D::DrawText("▲", {upRec.x + 8, upRec.y + 7}, SpaceB, 14,
+      Fumbo::Graphic2D::DrawText("Up", {upRec.x + 8, upRec.y + 7}, SpaceB, 14,
                                  WHITE);
     }
 
@@ -415,7 +419,7 @@ void AddPlaylist::DrawDirty() {
       Fumbo::Graphic2D::DrawRectangleRounded(
           downRec, 0.2, 4,
           hoverDown ? Color{80, 160, 255, 100} : Color{50, 53, 60, 100});
-      Fumbo::Graphic2D::DrawText("▼", {downRec.x + 8, downRec.y + 7}, SpaceB,
+      Fumbo::Graphic2D::DrawText("Dn", {downRec.x + 8, downRec.y + 7}, SpaceB,
                                  14, WHITE);
     }
 
