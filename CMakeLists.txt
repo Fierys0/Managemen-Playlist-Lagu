@@ -83,7 +83,7 @@ file(GLOB_RECURSE GAME_SOURCES
     src/main.cpp
 )
 
-add_executable(${PROJECT_NAME} ${GAME_SOURCES})
+add_executable(${PROJECT_NAME} WIN32 ${GAME_SOURCES})
 
 add_dependencies(${PROJECT_NAME} pack_assets)
 

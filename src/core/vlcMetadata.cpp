@@ -2,6 +2,7 @@
 #include "fumbo.hpp"
 #include <algorithm>
 #include <chrono>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <thread>
@@ -32,6 +33,30 @@ void VlcMeta::Shutdown()
   }
 }
 
+// Decode percent-encoded URI paths (e.g. %20 -> space)
+static std::string urlDecode(const std::string &str)
+{
+  std::string result;
+  result.reserve(str.length());
+  for (size_t i = 0; i < str.length(); ++i)
+  {
+    if (str[i] == '%' && i + 2 < str.length())
+    {
+      char hex[3] = { str[i+1], str[i+2], '\0' };
+      char *end;
+      long val = std::strtol(hex, &end, 16);
+      if (end == hex + 2)
+      {
+        result.push_back(static_cast<char>(val));
+        i += 2;
+        continue;
+      }
+    }
+    result.push_back(str[i]);
+  }
+  return result;
+}
+
 // Ambil nama file tanpa ekstensi dari path lengkap
 static std::string stemFromPath(const std::string &path)
 {
@@ -58,11 +83,19 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath)
     return t;
   }
 
-  // On Windows, libvlc_media_new_path expects forward-slash paths
+#ifdef _WIN32
+  // On Windows, libvlc_media_new_path expects native backslash paths
+  std::string normalizedPath = filePath;
+  for (char &c : normalizedPath)
+    if (c == '/')
+      c = '\\';
+#else
+  // On non-Windows, libvlc_media_new_path expects forward-slash paths
   std::string normalizedPath = filePath;
   for (char &c : normalizedPath)
     if (c == '\\')
       c = '/';
+#endif
 
   libvlc_media_t *m = libvlc_media_new_path(s_vlc, normalizedPath.c_str());
   if (!m)
@@ -99,8 +132,12 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath)
 
   auto getMeta = [&](libvlc_meta_t key) -> std::string
   {
-    const char *v = libvlc_media_get_meta(m, key);
-    return v ? std::string(v) : std::string{};
+    char *v = libvlc_media_get_meta(m, key);
+    if (!v)
+      return {};
+    std::string res(v);
+    libvlc_free(v);
+    return res;
   };
 
   std::string title = getMeta(libvlc_meta_Title);
@@ -116,17 +153,17 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath)
   std::string artUrl = getMeta(libvlc_meta_ArtworkURL);
   if (!artUrl.empty())
   {
-    if (artUrl.substr(0, 8) == "file:///")
+    if (artUrl.compare(0, 8, "file:///") == 0)
     {
 #ifdef _WIN32
-      t.coverArtPath = artUrl.substr(8);
+      t.coverArtPath = urlDecode(artUrl.substr(8));
 #else
-      t.coverArtPath = artUrl.substr(7);
+      t.coverArtPath = urlDecode(artUrl.substr(7));
 #endif
     }
-    else if (artUrl.substr(0, 7) == "file://")
+    else if (artUrl.compare(0, 7, "file://") == 0)
     {
-      t.coverArtPath = artUrl.substr(7);
+      t.coverArtPath = urlDecode(artUrl.substr(7));
     }
     else
     {
