@@ -11,42 +11,57 @@
 // Instance VLC global pada level modul
 static libvlc_instance_t *s_vlc = nullptr;
 
-void VlcMeta::Init()
-{
+void VlcMeta::Init() {
   if (s_vlc)
     return;
-  // Sembunyikan output VLC
+
+  std::string appDir = Fumbo::Engine::Instance().GetAppDir();
+
+#ifdef _WIN32
+  // Set VLC_PLUGIN_PATH ke direktori plugins lokal secara absolut
+  if (!appDir.empty()) {
+    std::string pluginsPath = appDir;
+    if (pluginsPath.back() != '/' && pluginsPath.back() != '\\')
+      pluginsPath += "/";
+    pluginsPath += "plugins";
+
+    // Normalisasi pemisah path untuk Windows
+    for (char &c : pluginsPath) {
+      if (c == '/')
+        c = '\\';
+    }
+
+    _putenv_s("VLC_PLUGIN_PATH", pluginsPath.c_str());
+  }
+#endif
+
+  // Gunakan mode quiet tanpa logging ke file
   const char *args[] = {"--quiet"};
   s_vlc = libvlc_new(1, args);
+
   if (s_vlc)
     Fumbo::Log::Info("[VLC] libvlc initialised successfully");
   else
     Fumbo::Log::Error("[VLC] libvlc_new() returned null — VLC not available");
 }
 
-void VlcMeta::Shutdown()
-{
-  if (s_vlc)
-  {
+void VlcMeta::Shutdown() {
+  if (s_vlc) {
     libvlc_release(s_vlc);
     s_vlc = nullptr;
   }
 }
 
 // Decode percent-encoded URI paths (e.g. %20 -> space)
-static std::string urlDecode(const std::string &str)
-{
+static std::string urlDecode(const std::string &str) {
   std::string result;
   result.reserve(str.length());
-  for (size_t i = 0; i < str.length(); ++i)
-  {
-    if (str[i] == '%' && i + 2 < str.length())
-    {
-      char hex[3] = { str[i+1], str[i+2], '\0' };
+  for (size_t i = 0; i < str.length(); ++i) {
+    if (str[i] == '%' && i + 2 < str.length()) {
+      char hex[3] = {str[i + 1], str[i + 2], '\0'};
       char *end;
       long val = std::strtol(hex, &end, 16);
-      if (end == hex + 2)
-      {
+      if (end == hex + 2) {
         result.push_back(static_cast<char>(val));
         i += 2;
         continue;
@@ -58,8 +73,7 @@ static std::string urlDecode(const std::string &str)
 }
 
 // Ambil nama file tanpa ekstensi dari path lengkap
-static std::string stemFromPath(const std::string &path)
-{
+static std::string stemFromPath(const std::string &path) {
   size_t slash = path.find_last_of("/\\");
   std::string name =
       (slash == std::string::npos) ? path : path.substr(slash + 1);
@@ -69,16 +83,14 @@ static std::string stemFromPath(const std::string &path)
   return name;
 }
 
-Track VlcMeta::GetTrackInfo(const std::string &filePath)
-{
+Track VlcMeta::GetTrackInfo(const std::string &filePath) {
   Track t;
   t.filePath = filePath;
   t.title = stemFromPath(filePath); // judul cadangan jika metadata tidak ada
 
   Fumbo::Log::Infof("[VLC] GetTrackInfo: '%s'", filePath.c_str());
 
-  if (!s_vlc)
-  {
+  if (!s_vlc) {
     Fumbo::Log::Warn("[VLC] s_vlc is null, returning stub track");
     return t;
   }
@@ -98,9 +110,9 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath)
 #endif
 
   libvlc_media_t *m = libvlc_media_new_path(s_vlc, normalizedPath.c_str());
-  if (!m)
-  {
-    Fumbo::Log::Errorf("[VLC] libvlc_media_new_path failed for: '%s'", normalizedPath.c_str());
+  if (!m) {
+    Fumbo::Log::Errorf("[VLC] libvlc_media_new_path failed for: '%s'",
+                       normalizedPath.c_str());
     return t;
   }
 
@@ -114,24 +126,23 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath)
   // Tunggu hingga parsing selesai (maks 5 detik)
   using namespace std::chrono;
   auto deadline = steady_clock::now() + seconds(5);
-  while (steady_clock::now() < deadline)
-  {
+  while (steady_clock::now() < deadline) {
     libvlc_media_parsed_status_t st = libvlc_media_get_parsed_status(m);
     if (st == libvlc_media_parsed_status_done ||
         st == libvlc_media_parsed_status_failed ||
-        st == libvlc_media_parsed_status_timeout)
-    {
+        st == libvlc_media_parsed_status_timeout) {
       if (st == libvlc_media_parsed_status_failed)
-        Fumbo::Log::Warnf("[VLC] Parse failed for: '%s'", normalizedPath.c_str());
+        Fumbo::Log::Warnf("[VLC] Parse failed for: '%s'",
+                          normalizedPath.c_str());
       else if (st == libvlc_media_parsed_status_timeout)
-        Fumbo::Log::Warnf("[VLC] Parse timed out for: '%s'", normalizedPath.c_str());
+        Fumbo::Log::Warnf("[VLC] Parse timed out for: '%s'",
+                          normalizedPath.c_str());
       break;
     }
-    std::this_thread::sleep_for(milliseconds(50));
+    std::this_thread::sleep_for(milliseconds(100));
   }
 
-  auto getMeta = [&](libvlc_meta_t key) -> std::string
-  {
+  auto getMeta = [&](libvlc_meta_t key) -> std::string {
     char *v = libvlc_media_get_meta(m, key);
     if (!v)
       return {};
@@ -151,50 +162,41 @@ Track VlcMeta::GetTrackInfo(const std::string &filePath)
   t.album = getMeta(libvlc_meta_Album);
 
   std::string artUrl = getMeta(libvlc_meta_ArtworkURL);
-  if (!artUrl.empty())
-  {
-    if (artUrl.compare(0, 8, "file:///") == 0)
-    {
+  if (!artUrl.empty()) {
+    if (artUrl.compare(0, 8, "file:///") == 0) {
 #ifdef _WIN32
       t.coverArtPath = urlDecode(artUrl.substr(8));
 #else
       t.coverArtPath = urlDecode(artUrl.substr(7));
 #endif
-    }
-    else if (artUrl.compare(0, 7, "file://") == 0)
-    {
+    } else if (artUrl.compare(0, 7, "file://") == 0) {
       t.coverArtPath = urlDecode(artUrl.substr(7));
-    }
-    else
-    {
+    } else {
       t.coverArtPath = artUrl;
     }
   }
 
   t.durationMs = libvlc_media_get_duration(m);
 
-  Fumbo::Log::Infof("[VLC] Track parsed — title='%s' artist='%s' durationMs=%lld coverArt='%s'",
-                    t.title.c_str(), t.artist.c_str(),
-                    (long long)t.durationMs, t.coverArtPath.c_str());
+  Fumbo::Log::Infof("[VLC] Track parsed — title='%s' artist='%s' "
+                    "durationMs=%lld coverArt='%s'",
+                    t.title.c_str(), t.artist.c_str(), (long long)t.durationMs,
+                    t.coverArtPath.c_str());
 
   libvlc_media_release(m);
   return t;
 }
 
-Texture2D VlcMeta::LoadCoverTexture(const std::string &coverArtPath)
-{
-  if (!coverArtPath.empty())
-  {
+Texture2D VlcMeta::LoadCoverTexture(const std::string &coverArtPath) {
+  if (!coverArtPath.empty()) {
     // Periksa apakah file ada sebelum mencoba memuatnya
     FILE *f = fopen(coverArtPath.c_str(), "rb");
-    if (f)
-    {
+    if (f) {
       fclose(f);
       // Muat langsung via raylib (melewati asset pack karena ini path cache
       // sistem)
       Image img = LoadImage(coverArtPath.c_str());
-      if (img.data)
-      {
+      if (img.data) {
         Texture2D tex = LoadTextureFromImage(img);
         UnloadImage(img);
         if (tex.id != 0)
